@@ -12,7 +12,7 @@ from collections import deque
 from datetime import datetime
 
 # Configuration
-PIHOLE_API = "http://localhost/admin/api.php"
+PIHOLE_API = "http://localhost/api"
 PASSWORD_FILE = "/home/renzof/.pihole_password"
 SCREEN_WIDTH = 480
 SCREEN_HEIGHT = 320
@@ -41,7 +41,8 @@ class PixelFont:
             self.medium = pygame.font.Font("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 20)
             self.small = pygame.font.Font("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 14)
             self.tiny = pygame.font.Font("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 10)
-        except:
+        except Exception as e:
+            print(f"Error loading fonts: {e}")
             # Fallback to default
             self.large = pygame.font.SysFont("monospace", 32, bold=True)
             self.medium = pygame.font.SysFont("monospace", 20, bold=True)
@@ -49,7 +50,7 @@ class PixelFont:
             self.tiny = pygame.font.SysFont("monospace", 10)
 
 class PiholeAPI:
-    """Pi-hole API handler"""
+    """Pi-hole API v6 handler"""
     def __init__(self):
         self.session_id = None
         self.password = self._load_password()
@@ -59,7 +60,8 @@ class PiholeAPI:
         try:
             with open(PASSWORD_FILE, 'r') as f:
                 return f.read().strip()
-        except:
+        except Exception as e:
+            print(f"Error loading password: {e}")
             return ""
 
     def _authenticate(self):
@@ -68,89 +70,89 @@ class PiholeAPI:
             return
         try:
             response = requests.post(
-                f"{PIHOLE_API}",
-                json={"auth": self.password},
+                f"{PIHOLE_API}/auth",
+                json={"password": self.password},
                 timeout=5
             )
             if response.ok:
                 data = response.json()
                 self.session_id = data.get("session", {}).get("sid")
-        except:
+        except Exception as e:
+            print(f"Error authenticating: {e}")
             pass
 
-    def get_summary(self):
-        """Get Pi-hole summary stats"""
-        try:
-            params = {}
-            if self.session_id:
-                params["sid"] = self.session_id
+    def _get(self, endpoint):
+        """Make authenticated GET request"""
+        headers = {}
+        if self.session_id:
+            headers["sid"] = self.session_id
 
+        try:
             response = requests.get(
-                f"{PIHOLE_API}?summaryRaw",
-                params=params,
+                f"{PIHOLE_API}{endpoint}",
+                headers=headers,
                 timeout=5
             )
             if response.ok:
                 return response.json()
         except Exception as e:
+            print(f"Error making GET request: {e}")
             pass
         return {}
+
+    def get_summary(self):
+        """Get Pi-hole summary stats"""
+        data = self._get("/stats/summary")
+
+        # Map v6 API response to expected format
+        queries = data.get("queries", {})
+        return {
+            "dns_queries_today": queries.get("total", 0),
+            "ads_blocked_today": queries.get("blocked", 0),
+            "ads_percentage_today": queries.get("percent_blocked", 0),
+            "unique_clients": queries.get("unique_clients", 0),
+            "domains_being_blocked": data.get("gravity", {}).get("domains_being_blocked", 0),
+            "status": "enabled" if data.get("blocking", True) else "disabled"
+        }
 
     def get_top_blocked(self, count=10):
         """Get top blocked domains"""
-        try:
-            params = {"topItems": count}
-            if self.session_id:
-                params["sid"] = self.session_id
+        data = self._get(f"/stats/top_domains?blocked=true&count={count}")
 
-            response = requests.get(
-                f"{PIHOLE_API}",
-                params=params,
-                timeout=5
-            )
-            if response.ok:
-                data = response.json()
-                return data.get("top_ads", {})
-        except:
-            pass
-        return {}
+        # Convert to dict format
+        result = {}
+        for item in data.get("domains", []):
+            result[item.get("domain", "unknown")] = item.get("count", 0)
+        return result
 
     def get_top_clients(self, count=10):
         """Get top clients"""
-        try:
-            params = {"topClients": count}
-            if self.session_id:
-                params["sid"] = self.session_id
+        data = self._get(f"/stats/top_clients?count={count}")
 
-            response = requests.get(
-                f"{PIHOLE_API}",
-                params=params,
-                timeout=5
-            )
-            if response.ok:
-                data = response.json()
-                return data.get("top_sources", {})
-        except:
-            pass
-        return {}
+        # Convert to dict format
+        result = {}
+        for item in data.get("clients", []):
+            name = item.get("name") or item.get("ip", "unknown")
+            result[name] = item.get("count", 0)
+        return result
 
     def get_overtime(self):
         """Get queries over time"""
-        try:
-            params = {"overTimeData10mins": ""}
-            if self.session_id:
-                params["sid"] = self.session_id
+        data = self._get("/history")
 
-            response = requests.get(
-                f"{PIHOLE_API}",
-                params=params,
-                timeout=5
-            )
-            if response.ok:
-                return response.json()
-        except:
-            pass
-        return {}
+        # Convert to expected format
+        domains = {}
+        ads = {}
+
+        for item in data.get("history", []):
+            timestamp = item.get("timestamp", 0)
+            domains[timestamp] = item.get("total", 0)
+            ads[timestamp] = item.get("blocked", 0)
+
+        return {
+            "domains_over_time": domains,
+            "ads_over_time": ads
+        }
 
 
 class Screen:
