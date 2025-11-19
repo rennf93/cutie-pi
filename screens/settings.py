@@ -37,6 +37,10 @@ class SettingsScreen(BaseScreen):
         # Track touch for option selection
         self.option_rects: list[pygame.Rect] = []
 
+        # Lock state - settings locked by default
+        self.locked = True
+        self.lock_rect = pygame.Rect(430, 5, 40, 30)  # Lock icon area
+
     def update(self, data: dict) -> None:
         """Update settings data"""
         # Get current theme from data or default
@@ -47,6 +51,15 @@ class SettingsScreen(BaseScreen):
     def handle_tap(self, pos: tuple[int, int]) -> dict | None:
         """Handle tap events, return action dict if action needed"""
         x, y = pos
+
+        # Check if lock icon was tapped
+        if self.lock_rect.collidepoint(pos):
+            self.locked = not self.locked
+            return None
+
+        # If locked, ignore all other taps
+        if self.locked:
+            return None
 
         # Check option selection first
         tapped_option = None
@@ -115,9 +128,21 @@ class SettingsScreen(BaseScreen):
         title = self.font.medium.render("SETTINGS", True, colors.CYAN())
         surface.blit(title, (10, 10))
 
-        # Version in top right
+        # Lock icon in top right (before version)
+        lock_color = colors.RED() if self.locked else colors.GREEN()
+        # Draw lock body
+        pygame.draw.rect(surface, lock_color, (445, 15, 16, 12))
+        # Draw lock shackle (arch)
+        if self.locked:
+            # Closed shackle
+            pygame.draw.arc(surface, lock_color, (447, 6, 12, 12), 0, 3.14, 2)
+        else:
+            # Open shackle (shifted right)
+            pygame.draw.arc(surface, lock_color, (451, 6, 12, 12), 0, 3.14, 2)
+
+        # Version below lock
         version_text = self.font.tiny.render(f"v{VERSION}", True, colors.GRAY())
-        surface.blit(version_text, (480 - version_text.get_width() - 10, 15))
+        surface.blit(version_text, (480 - version_text.get_width() - 10, 28))
 
         y = 38
         row_height = 38
@@ -184,5 +209,8 @@ class SettingsScreen(BaseScreen):
         draw_row("TIMEOUT", timeout_str, has_arrows=True)
 
         # Instructions at bottom
-        hint = self.font.tiny.render("TAP TO CHANGE", True, colors.GRAY())
+        if self.locked:
+            hint = self.font.tiny.render("TAP LOCK TO EDIT", True, colors.GRAY())
+        else:
+            hint = self.font.tiny.render("TAP TO CHANGE", True, colors.GRAY())
         surface.blit(hint, (240 - hint.get_width() // 2, 285))
