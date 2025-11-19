@@ -10,6 +10,7 @@ import time
 import math
 import os
 import subprocess
+import shutil
 from collections import deque
 from datetime import datetime
 
@@ -38,30 +39,28 @@ DARK_GRAY = (40, 40, 40)
 
 
 class PixelFont:
-    """Simple pixel font renderer"""
+    """Pixel art font renderer"""
 
     def __init__(self) -> None:
         pygame.font.init()
-        # Use a monospace font for that retro feel
+        # Use Press Start 2P for that authentic 8-bit look
+        pixel_font = os.path.expanduser("~/.fonts/PressStart2P.ttf")
+        fallback = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"
+
         try:
-            self.large = pygame.font.Font(
-                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 32
-            )
-            self.medium = pygame.font.Font(
-                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 20
-            )
-            self.small = pygame.font.Font(
-                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 14
-            )
-            self.tiny = pygame.font.Font(
-                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 10
-            )
+            if os.path.exists(pixel_font):
+                self.large = pygame.font.Font(pixel_font, 16)
+                self.medium = pygame.font.Font(pixel_font, 12)
+                self.small = pygame.font.Font(pixel_font, 8)
+                self.tiny = pygame.font.Font(pixel_font, 6)
+            else:
+                raise FileNotFoundError("Pixel font not found")
         except Exception as e:
-            print(f"Error loading fonts: {e}")
+            print(f"Error loading pixel font: {e}")
             # Fallback to default
-            self.large = pygame.font.SysFont("monospace", 32, bold=True)
-            self.medium = pygame.font.SysFont("monospace", 20, bold=True)
-            self.small = pygame.font.SysFont("monospace", 14)
+            self.large = pygame.font.Font(fallback, 32)
+            self.medium = pygame.font.Font(fallback, 20)
+            self.small = pygame.font.Font(fallback, 14)
             self.tiny = pygame.font.SysFont("monospace", 10)
 
 
@@ -119,11 +118,12 @@ class PiholeAPI:
 
         # Map v6 API response to expected format
         queries = data.get("queries", {})
+        clients = data.get("clients", {})
         return {
             "dns_queries_today": queries.get("total", 0),
             "ads_blocked_today": queries.get("blocked", 0),
             "ads_percentage_today": queries.get("percent_blocked", 0),
-            "unique_clients": queries.get("unique_clients", 0),
+            "unique_clients": clients.get("active", 0),
             "domains_being_blocked": data.get("gravity", {}).get(
                 "domains_being_blocked", 0
             ),
@@ -199,12 +199,57 @@ class Screen:
         rect: tuple[int, int, int, int],
         color: tuple[int, int, int],
     ) -> None:
-        """Draw a pixelated border"""
+        """Draw a chunky pixelated border"""
         x, y, w, h = rect
-        pygame.draw.rect(surface, color, rect, 2)
-        # Corner pixels for that 8-bit feel
-        for corner in [(x, y), (x + w - 4, y), (x, y + h - 4), (x + w - 4, y + h - 4)]:
-            pygame.draw.rect(surface, color, (*corner, 4, 4))
+        # Thick chunky border
+        pygame.draw.rect(surface, color, rect, 3)
+        # Corner blocks for that 8-bit feel
+        block = 6
+        for corner in [(x, y), (x + w - block, y), (x, y + h - block), (x + w - block, y + h - block)]:
+            pygame.draw.rect(surface, color, (*corner, block, block))
+
+    def draw_chunky_bar(
+        self,
+        surface: pygame.Surface,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        percent: float,
+        color: tuple[int, int, int],
+        bg_color: tuple[int, int, int] = DARK_GRAY,
+    ) -> None:
+        """Draw a segmented pixel-art progress bar"""
+        # Chunky segments - calculate how many fit
+        segment_width = 6
+        segment_gap = 2
+        total_segment_size = segment_width + segment_gap
+        num_segments = width // total_segment_size
+
+        # Actual width used by segments (last segment has no gap after it)
+        actual_width = num_segments * segment_width + (num_segments - 1) * segment_gap
+
+        # Background matches actual segment area
+        pygame.draw.rect(surface, bg_color, (x, y, actual_width, height))
+
+        filled_segments = int((percent / 100) * num_segments)
+        # Show at least 1 segment if percent > 0
+        if percent > 0 and filled_segments == 0:
+            filled_segments = 1
+
+        for i in range(num_segments):
+            seg_x = x + i * total_segment_size
+            if i < filled_segments:
+                pygame.draw.rect(surface, color, (seg_x, y + 2, segment_width, height - 4))
+            else:
+                pygame.draw.rect(surface, (30, 30, 30), (seg_x, y + 2, segment_width, height - 4))
+
+    def draw_scanlines(self, surface: pygame.Surface) -> None:
+        """Draw CRT scanline effect"""
+        scanline_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        for y in range(0, SCREEN_HEIGHT, 3):
+            pygame.draw.line(scanline_surface, (0, 0, 0, 60), (0, y), (SCREEN_WIDTH, y), 1)
+        surface.blit(scanline_surface, (0, 0))
 
 
 class StatsScreen(Screen):
@@ -228,63 +273,91 @@ class StatsScreen(Screen):
 
     def draw(self, surface: pygame.Surface) -> None:
         surface.fill(BLACK)
-        self.draw_header(surface, "< PI-HOLE STATS >")
+        self.draw_header(surface, "PI-HOLE")
 
         data = self.dashboard.data
 
-        # Animated scanning line effect
-        scan_y = 40 + (self.animation_offset % 280)
-        pygame.draw.line(surface, (0, 50, 0), (0, scan_y), (SCREEN_WIDTH, scan_y), 1)
+        y = 50
 
         # Total Queries box
-        self.draw_pixel_border(surface, (20, 60, 200, 80), GREEN)
-        text = self.font.small.render("TOTAL QUERIES", True, GREEN)
-        surface.blit(text, (30, 70))
-        num = self.font.large.render(f"{int(self.displayed_queries):,}", True, WHITE)
-        surface.blit(num, (30, 95))
+        self.draw_pixel_border(surface, (15, y, 220, 65), GREEN)
+        text = self.font.small.render("QUERIES", True, GREEN)
+        surface.blit(text, (25, y + 8))
+        num = self.font.large.render(f"{int(self.displayed_queries)}", True, WHITE)
+        surface.blit(num, (25, y + 30))
 
         # Blocked box
-        self.draw_pixel_border(surface, (260, 60, 200, 80), RED)
+        self.draw_pixel_border(surface, (250, y, 220, 65), RED)
         text = self.font.small.render("BLOCKED", True, RED)
-        surface.blit(text, (270, 70))
-        num = self.font.large.render(f"{int(self.displayed_blocked):,}", True, WHITE)
-        surface.blit(num, (270, 95))
+        surface.blit(text, (260, y + 8))
+        num = self.font.large.render(f"{int(self.displayed_blocked)}", True, WHITE)
+        surface.blit(num, (260, y + 30))
 
-        # Block percentage with animated gauge
+        y = 130
+
+        # Block percentage with chunky bar - wider
         percent = data.get("ads_percentage_today", 0)
-        self.draw_gauge(surface, 120, 200, 80, percent)
+        text = self.font.small.render("BLOCK RATE", True, CYAN)
+        surface.blit(text, (15, y))
+        self.draw_chunky_bar(surface, 15, y + 18, 370, 25, percent, CYAN)
+        percent_text = self.font.medium.render(f"{percent:.1f}%", True, WHITE)
+        surface.blit(percent_text, (395, y + 18))
 
-        # Clients and domains
+        y = 185
+
+        # Clients box
         clients = data.get("unique_clients", 0)
+        self.draw_pixel_border(surface, (15, y, 220, 55), YELLOW)
+        text = self.font.small.render("CLIENTS", True, YELLOW)
+        surface.blit(text, (25, y + 8))
+        num = self.font.medium.render(f"{clients}", True, WHITE)
+        surface.blit(num, (25, y + 28))
+
+        # Blocklist box
         domains = data.get("domains_being_blocked", 0)
+        self.draw_pixel_border(surface, (250, y, 220, 55), PURPLE)
+        text = self.font.small.render("BLOCKLIST", True, PURPLE)
+        surface.blit(text, (260, y + 8))
+        # Format large numbers
+        if domains >= 1000000:
+            domains_str = f"{domains/1000000:.1f}M"
+        elif domains >= 1000:
+            domains_str = f"{domains/1000:.0f}K"
+        else:
+            domains_str = str(domains)
+        num = self.font.medium.render(domains_str, True, WHITE)
+        surface.blit(num, (260, y + 28))
 
-        text = self.font.small.render(f"CLIENTS: {clients}", True, CYAN)
-        surface.blit(text, (280, 180))
+        y = 255
 
-        text = self.font.small.render(f"BLOCKLIST: {domains:,}", True, YELLOW)
-        surface.blit(text, (280, 210))
-
-        # Status indicator
+        # Status box
         status = data.get("status", "unknown")
         color = GREEN if status == "enabled" else RED
-        pygame.draw.circle(surface, color, (440, 280), 10)
-        # Pulsing effect
-        pulse = abs(math.sin(self.animation_offset * 0.05)) * 5
-        pygame.draw.circle(surface, color, (440, 280), int(10 + pulse), 2)
+        self.draw_pixel_border(surface, (15, y, 220, 50), color)
+        text = self.font.small.render("STATUS", True, color)
+        surface.blit(text, (25, y + 8))
+        # Pulsing dot + status text side by side
+        pulse = abs(math.sin(self.animation_offset * 0.1)) * 3
+        pygame.draw.rect(surface, color, (25, y + 28, int(8 + pulse), int(8 + pulse)))
+        status_text = self.font.medium.render(status.upper(), True, WHITE)
+        surface.blit(status_text, (45, y + 25))
 
-        text = self.font.tiny.render(status.upper(), True, color)
-        surface.blit(text, (420, 295))
+        # DNS box - show Pi-hole's IP dynamically
+        self.draw_pixel_border(surface, (250, y, 220, 50), CYAN)
+        text = self.font.small.render("DNS", True, CYAN)
+        surface.blit(text, (260, y + 8))
+        # Get IP from system
+        try:
+            result = subprocess.run(['hostname', '-I'], capture_output=True, text=True, timeout=1)
+            ip = result.stdout.strip().split()[0] if result.stdout.strip() else "N/A"
+        except Exception as e:
+            print(f"Error getting IP: {e}")
+            ip = "N/A"
+        dns_text = self.font.medium.render(ip, True, WHITE)
+        surface.blit(dns_text, (260, y + 25))
 
-        # Date and time
-        now = datetime.now()
-        time_str = now.strftime("%H:%M:%S")
-        date_str = now.strftime("%Y-%m-%d")
-
-        time_text = self.font.medium.render(time_str, True, WHITE)
-        surface.blit(time_text, (280, 250))
-
-        date_text = self.font.tiny.render(date_str, True, GRAY)
-        surface.blit(date_text, (280, 275))
+        # Scanlines
+        self.draw_scanlines(surface)
 
     def draw_gauge(
         self, surface: pygame.Surface, x: int, y: int, radius: int, percent: int
@@ -343,18 +416,18 @@ class GraphScreen(Screen):
 
     def draw(self, surface: pygame.Surface) -> None:
         surface.fill(BLACK)
-        self.draw_header(surface, "< QUERY GRAPH >")
+        self.draw_header(surface, "GRAPH")
 
         if not self.queries_history:
             text = self.font.medium.render("Loading data...", True, GRAY)
             surface.blit(text, (SCREEN_WIDTH // 2 - 80, SCREEN_HEIGHT // 2))
             return
 
-        # Graph area
-        graph_x = 50
-        graph_y = 60
-        graph_w = SCREEN_WIDTH - 70
-        graph_h = 200
+        # Graph area - full width
+        graph_x = 15
+        graph_y = 50
+        graph_w = SCREEN_WIDTH - 30
+        graph_h = 220
 
         # Draw grid
         for i in range(5):
@@ -413,6 +486,9 @@ class GraphScreen(Screen):
         text = self.font.tiny.render("now", True, GRAY)
         surface.blit(text, (graph_x + graph_w - 20, graph_y + graph_h + 30))
 
+        # Scanlines
+        self.draw_scanlines(surface)
+
 
 class TopBlockedScreen(Screen):
     """Top blocked domains"""
@@ -423,7 +499,7 @@ class TopBlockedScreen(Screen):
 
     def draw(self, surface: pygame.Surface) -> None:
         surface.fill(BLACK)
-        self.draw_header(surface, "< TOP BLOCKED >")
+        self.draw_header(surface, "BLOCKED")
 
         blocked = self.dashboard.top_blocked
         if not blocked:
@@ -431,36 +507,40 @@ class TopBlockedScreen(Screen):
             surface.blit(text, (SCREEN_WIDTH // 2 - 40, SCREEN_HEIGHT // 2))
             return
 
-        y = 60
-        for i, (domain, count) in enumerate(list(blocked.items())[:8]):
+        y = 50
+        row_height = 28
+        for i, (domain, count) in enumerate(list(blocked.items())[:9]):
             # Truncate long domains
-            if len(domain) > 35:
-                domain = domain[:32] + "..."
+            if len(domain) > 25:
+                domain = domain[:22] + "..."
 
             # Alternating row colors
             if i % 2 == 0:
                 pygame.draw.rect(
-                    surface, (20, 20, 20), (10, y - 2, SCREEN_WIDTH - 20, 28)
+                    surface, (20, 20, 20), (10, y, SCREEN_WIDTH - 20, row_height)
                 )
 
-            # Rank
+            # Rank - vertically centered
             rank_text = self.font.small.render(f"{i + 1}.", True, YELLOW)
-            surface.blit(rank_text, (15, y))
+            surface.blit(rank_text, (15, y + 8))
 
-            # Domain
-            domain_text = self.font.tiny.render(domain, True, WHITE)
-            surface.blit(domain_text, (45, y + 2))
+            # Domain - vertically centered
+            domain_text = self.font.small.render(domain, True, WHITE)
+            surface.blit(domain_text, (50, y + 8))
 
-            # Count bar
+            # Count text - right aligned before bar
+            count_text = self.font.small.render(str(count), True, WHITE)
+            surface.blit(count_text, (SCREEN_WIDTH - 120, y + 8))
+
+            # Count bar - right side
             max_count = max(blocked.values()) if blocked else 1
-            bar_width = int((count / max_count) * 100)
-            pygame.draw.rect(surface, RED, (SCREEN_WIDTH - 130, y + 5, bar_width, 12))
+            bar_width = int((count / max_count) * 60)
+            pygame.draw.rect(surface, RED, (SCREEN_WIDTH - 70, y + 8, bar_width, 12))
 
-            # Count text
-            count_text = self.font.tiny.render(str(count), True, WHITE)
-            surface.blit(count_text, (SCREEN_WIDTH - 25, y + 2))
+            y += row_height
 
-            y += 30
+        # Scanlines
+        self.draw_scanlines(surface)
 
 
 class ClientsScreen(Screen):
@@ -468,7 +548,7 @@ class ClientsScreen(Screen):
 
     def draw(self, surface: pygame.Surface) -> None:
         surface.fill(BLACK)
-        self.draw_header(surface, "< TOP CLIENTS >")
+        self.draw_header(surface, "CLIENTS")
 
         clients = self.dashboard.top_clients
         if not clients:
@@ -476,37 +556,41 @@ class ClientsScreen(Screen):
             surface.blit(text, (SCREEN_WIDTH // 2 - 40, SCREEN_HEIGHT // 2))
             return
 
-        y = 60
-        for i, (client, count) in enumerate(list(clients.items())[:8]):
+        y = 50
+        row_height = 28
+        for i, (client, count) in enumerate(list(clients.items())[:9]):
             # Truncate long names
-            if len(client) > 30:
-                client = client[:27] + "..."
+            if len(client) > 25:
+                client = client[:22] + "..."
 
             # Alternating row colors
             if i % 2 == 0:
                 pygame.draw.rect(
-                    surface, (20, 20, 20), (10, y - 2, SCREEN_WIDTH - 20, 28)
+                    surface, (20, 20, 20), (10, y, SCREEN_WIDTH - 20, row_height)
                 )
 
-            # Rank with color coding
-            colors = [YELLOW, WHITE, WHITE, GRAY, GRAY, GRAY, GRAY, GRAY]
+            # Rank with color coding - vertically centered
+            colors = [YELLOW, WHITE, WHITE, GRAY, GRAY, GRAY, GRAY, GRAY, GRAY]
             rank_text = self.font.small.render(f"{i + 1}.", True, colors[i])
-            surface.blit(rank_text, (15, y))
+            surface.blit(rank_text, (15, y + 8))
 
-            # Client name/IP
+            # Client name/IP - vertically centered
             client_text = self.font.small.render(client, True, CYAN)
-            surface.blit(client_text, (45, y))
+            surface.blit(client_text, (50, y + 8))
 
-            # Query count bar
+            # Count text - right aligned before bar
+            count_text = self.font.small.render(str(count), True, WHITE)
+            surface.blit(count_text, (SCREEN_WIDTH - 120, y + 8))
+
+            # Query count bar - right side
             max_count = max(clients.values()) if clients else 1
-            bar_width = int((count / max_count) * 100)
-            pygame.draw.rect(surface, GREEN, (SCREEN_WIDTH - 130, y + 5, bar_width, 12))
+            bar_width = int((count / max_count) * 60)
+            pygame.draw.rect(surface, GREEN, (SCREEN_WIDTH - 70, y + 8, bar_width, 12))
 
-            # Count
-            count_text = self.font.tiny.render(str(count), True, WHITE)
-            surface.blit(count_text, (SCREEN_WIDTH - 25, y + 2))
+            y += row_height
 
-            y += 30
+        # Scanlines
+        self.draw_scanlines(surface)
 
 
 class SystemScreen(Screen):
@@ -523,6 +607,7 @@ class SystemScreen(Screen):
         self.ip_address = ""
         self.hostname = ""
         self.fan_speed = 0
+        self.fan_rpm = 0
         self.last_update = 0
 
     def get_system_info(self) -> None:
@@ -534,12 +619,11 @@ class SystemScreen(Screen):
                 cpu_times = list(map(int, cpu_line.split()[1:]))
                 idle = cpu_times[3]
                 total = sum(cpu_times)
-                if hasattr(self, "_last_cpu") and isinstance(self._last_cpu, tuple[int, int]):
+                if hasattr(self, "_last_cpu"):
                     idle_delta = idle - self._last_cpu[0]
                     total_delta = total - self._last_cpu[1]
-                    self.cpu_percent = (
-                        100 * (1 - idle_delta / total_delta) if total_delta > 0 else 0
-                    )
+                    if total_delta > 0:
+                        self.cpu_percent = 100 * (1 - idle_delta / total_delta)
                 self._last_cpu = (idle, total)
 
             # Memory
@@ -564,15 +648,19 @@ class SystemScreen(Screen):
                 self.temp = 0
 
             # Uptime
-            with open("/proc/uptime", "r") as f:
-                uptime_secs = float(f.read().split()[0])
-                days = int(uptime_secs // 86400)
-                hours = int((uptime_secs % 86400) // 3600)
-                mins = int((uptime_secs % 3600) // 60)
-                if days > 0:
-                    self.uptime = f"{days}d {hours}h {mins}m"
-                else:
-                    self.uptime = f"{hours}h {mins}m"
+            try:
+                with open("/proc/uptime", "r") as f:
+                    uptime_secs = float(f.read().split()[0])
+                    days = int(uptime_secs // 86400)
+                    hours = int((uptime_secs % 86400) // 3600)
+                    mins = int((uptime_secs % 3600) // 60)
+                    if days > 0:
+                        self.uptime = f"{days}d {hours}h {mins}m"
+                    else:
+                        self.uptime = f"{hours}h {mins}m"
+            except Exception as e:
+                print(f"Error getting uptime: {e}")
+                self.uptime = "N/A"
 
             # IP Address
             try:
@@ -594,18 +682,26 @@ class SystemScreen(Screen):
                 print(f"Error getting hostname: {e}")
                 self.hostname = "unknown"
 
-            # Fan speed (PWM)
-            try:
-                with open("/sys/class/hwmon/hwmon1/pwm1", "r") as f:
-                    self.fan_speed = int(f.read().strip())
-            except Exception as e:
-                print(f"Error getting fan speed: {e}")
+            # Fan speed (RPM) - read directly from fan input
+            fan_rpm_paths = [
+                "/sys/devices/platform/cooling_fan/hwmon/hwmon2/fan1_input",
+                "/sys/devices/platform/cooling_fan/hwmon/hwmon3/fan1_input",
+                "/sys/devices/platform/cooling_fan/hwmon/hwmon1/fan1_input",
+            ]
+            fan_found = False
+            for fan_path in fan_rpm_paths:
                 try:
-                    with open("/sys/class/hwmon/hwmon0/pwm1", "r") as f:
-                        self.fan_speed = int(f.read().strip())
-                except Exception as e:
-                    print(f"Error getting fan speed: {e}")
-                    self.fan_speed = 0
+                    with open(fan_path, "r") as f:
+                        self.fan_rpm = int(f.read().strip())
+                        # Convert RPM to percentage (max ~10000 RPM for Pi 5 fan)
+                        self.fan_speed = min(255, int((self.fan_rpm / 10000) * 255))
+                        fan_found = True
+                        break
+                except Exception:
+                    continue
+            if not fan_found:
+                self.fan_rpm = 0
+                self.fan_speed = 0
 
         except Exception as e:
             print(f"Error getting system info: {e}")
@@ -616,100 +712,116 @@ class SystemScreen(Screen):
         if current_time - self.last_update > 2:  # Update every 2 seconds
             self.get_system_info()
             self.last_update = current_time
+        # Initial call
+        if not self.uptime:
+            self.get_system_info()
 
     def draw(self, surface: pygame.Surface) -> None:
         surface.fill(BLACK)
-        self.draw_header(surface, "< SYSTEM INFO >")
+        self.draw_header(surface, "SYSTEM")
 
-        y = 55
+        y = 50
 
         # Hostname and IP
         text = self.font.medium.render(self.hostname, True, CYAN)
-        surface.blit(text, (20, y))
-        text = self.font.small.render(self.ip_address, True, GRAY)
-        surface.blit(text, (20, y + 25))
+        surface.blit(text, (15, y))
+        text = self.font.tiny.render(self.ip_address, True, GRAY)
+        surface.blit(text, (15, y + 20))
 
-        # Date and time (right side)
+        # Date and time (right side) - bigger and more prominent
         now = datetime.now()
         time_str = now.strftime("%H:%M")
         date_str = now.strftime("%a %d %b")
 
         time_text = self.font.large.render(time_str, True, WHITE)
-        surface.blit(time_text, (SCREEN_WIDTH - 120, y))
+        surface.blit(time_text, (SCREEN_WIDTH - 100, y))
         date_text = self.font.tiny.render(date_str, True, GRAY)
-        surface.blit(date_text, (SCREEN_WIDTH - 120, y + 35))
+        surface.blit(date_text, (SCREEN_WIDTH - 100, y + 22))
 
-        y = 120
+        y = 90
 
-        # CPU bar
-        self.draw_pixel_border(surface, (20, y, 200, 40), GREEN)
-        text = self.font.tiny.render("CPU", True, GREEN)
-        surface.blit(text, (25, y + 3))
+        # Disk usage - full width bar at top
+        text = self.font.small.render("DISK", True, GRAY)
+        surface.blit(text, (15, y + 5))
+        try:
+            total, used, free = shutil.disk_usage("/")
+            disk_percent = (used / total) * 100
+            disk_text = f"{used // (1024**3)}G/{total // (1024**3)}G"
+        except Exception as e:
+            print(f"Error getting disk usage: {e}")
+            disk_percent = 0
+            disk_text = "N/A"
+        self.draw_chunky_bar(surface, 60, y, 336, 22, disk_percent, GRAY)
+        disk_info = self.font.small.render(disk_text, True, WHITE)
+        surface.blit(disk_info, (405, y + 5))
 
-        # CPU bar fill
-        bar_width = int((self.cpu_percent / 100) * 180)
-        color = (
-            GREEN if self.cpu_percent < 70 else ORANGE if self.cpu_percent < 90 else RED
-        )
-        pygame.draw.rect(surface, color, (30, y + 18, bar_width, 15))
+        y = 130
 
-        percent_text = self.font.small.render(f"{self.cpu_percent:.0f}%", True, WHITE)
-        surface.blit(percent_text, (160, y + 15))
-
-        # RAM bar
-        self.draw_pixel_border(surface, (260, y, 200, 40), PURPLE)
-        text = self.font.tiny.render("RAM", True, PURPLE)
-        surface.blit(text, (265, y + 3))
-
-        bar_width = int((self.mem_percent / 100) * 180)
-        color = (
-            PURPLE
-            if self.mem_percent < 70
-            else ORANGE
-            if self.mem_percent < 90
-            else RED
-        )
-        pygame.draw.rect(surface, color, (270, y + 18, bar_width, 15))
-
-        percent_text = self.font.small.render(f"{self.mem_percent:.0f}%", True, WHITE)
-        surface.blit(percent_text, (400, y + 15))
-
-        y = 180
-
-        # Temperature
-        self.draw_pixel_border(surface, (20, y, 200, 60), ORANGE)
-        text = self.font.tiny.render("TEMPERATURE", True, ORANGE)
-        surface.blit(text, (25, y + 5))
-
+        # Temperature box
+        self.draw_pixel_border(surface, (15, y, 220, 50), ORANGE)
+        text = self.font.small.render("TEMP", True, ORANGE)
+        surface.blit(text, (25, y + 17))
         temp_color = GREEN if self.temp < 60 else ORANGE if self.temp < 75 else RED
-        temp_text = self.font.large.render(f"{self.temp:.1f}°C", True, temp_color)
-        surface.blit(temp_text, (30, y + 22))
+        temp_text = self.font.large.render(f"{self.temp:.0f}C", True, temp_color)
+        surface.blit(temp_text, (110, y + 14))
 
-        # Memory details
-        self.draw_pixel_border(surface, (260, y, 200, 60), CYAN)
-        text = self.font.tiny.render("MEMORY", True, CYAN)
-        surface.blit(text, (265, y + 5))
+        # Memory box
+        self.draw_pixel_border(surface, (250, y, 220, 50), CYAN)
+        text = self.font.small.render("MEM", True, CYAN)
+        surface.blit(text, (260, y + 17))
+        mem_text = self.font.large.render(f"{self.mem_used:.0f}/{self.mem_total:.0f}", True, WHITE)
+        surface.blit(mem_text, (310, y + 14))
 
-        mem_text = self.font.small.render(
-            f"{self.mem_used:.0f}/{self.mem_total:.0f}MB", True, WHITE
-        )
-        surface.blit(mem_text, (270, y + 28))
+        # Middle row - Uptime and Fan
+        y = 195
 
-        # Uptime
-        y = 260
-        text = self.font.tiny.render("UPTIME", True, GRAY)
-        surface.blit(text, (20, y))
-        uptime_text = self.font.medium.render(self.uptime, True, WHITE)
-        surface.blit(uptime_text, (20, y + 15))
+        # Uptime box
+        self.draw_pixel_border(surface, (15, y, 220, 50), GREEN)
+        text = self.font.small.render("UP", True, GREEN)
+        surface.blit(text, (25, y + 17))
+        uptime_text = self.font.large.render(self.uptime if self.uptime else "...", True, WHITE)
+        surface.blit(uptime_text, (90, y + 14))
 
-        # Fan speed (right side)
-        text = self.font.tiny.render("FAN", True, GRAY)
-        surface.blit(text, (SCREEN_WIDTH - 120, y))
+        # Fan box
+        self.draw_pixel_border(surface, (250, y, 220, 50), YELLOW)
+        text = self.font.small.render("FAN", True, YELLOW)
+        surface.blit(text, (260, y + 17))
         fan_percent = int((self.fan_speed / 255) * 100)
-        fan_text = self.font.medium.render(
+        fan_text = self.font.large.render(
             f"{fan_percent}%", True, WHITE if fan_percent > 0 else GRAY
         )
-        surface.blit(fan_text, (SCREEN_WIDTH - 120, y + 15))
+        surface.blit(fan_text, (340, y + 14))
+
+        # Bottom row - CPU and RAM tall bars with vertical labels
+        y = 250
+        bar_height = 60
+
+        # CPU - label close to bar
+        text = self.font.small.render("C", True, GREEN)
+        surface.blit(text, (15, y + 8))
+        text = self.font.small.render("P", True, GREEN)
+        surface.blit(text, (15, y + 23))
+        text = self.font.small.render("U", True, GREEN)
+        surface.blit(text, (15, y + 38))
+        cpu_color = GREEN if self.cpu_percent < 70 else ORANGE if self.cpu_percent < 90 else RED
+        self.draw_chunky_bar(surface, 30, y, 200, bar_height, self.cpu_percent, cpu_color)
+        percent_text = self.font.medium.render(f"{self.cpu_percent:.0f}%", True, WHITE)
+        surface.blit(percent_text, (100, y + 22))
+
+        # RAM - label close to bar
+        text = self.font.small.render("R", True, PURPLE)
+        surface.blit(text, (250, y + 8))
+        text = self.font.small.render("A", True, PURPLE)
+        surface.blit(text, (250, y + 23))
+        text = self.font.small.render("M", True, PURPLE)
+        surface.blit(text, (250, y + 38))
+        ram_color = PURPLE if self.mem_percent < 70 else ORANGE if self.mem_percent < 90 else RED
+        self.draw_chunky_bar(surface, 265, y, 200, bar_height, self.mem_percent, ram_color)
+        percent_text = self.font.medium.render(f"{self.mem_percent:.0f}%", True, WHITE)
+        surface.blit(percent_text, (335, y + 22))
+
+        # Add scanlines for that CRT effect
+        self.draw_scanlines(surface)
 
 
 class Dashboard:
