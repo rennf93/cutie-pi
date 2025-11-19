@@ -7,6 +7,11 @@ from ui.fonts import PixelFont
 from ui.components import UIComponents
 
 
+def _get_bar_radius():
+    """Get border radius for bars based on theme"""
+    return 2 if colors.use_glow() else 0
+
+
 class GraphScreen(BaseScreen):
     """Query overtime graph display"""
 
@@ -44,7 +49,8 @@ class GraphScreen(BaseScreen):
         graph_height = 230
 
         # Draw graph background
-        pygame.draw.rect(surface, colors.DARK_GRAY(), (graph_x, graph_y, graph_width, graph_height))
+        radius = 8 if colors.use_glow() else 0
+        pygame.draw.rect(surface, colors.DARK_GRAY(), (graph_x, graph_y, graph_width, graph_height), border_radius=radius)
 
         # Find max value for scaling
         max_val = max(max(t, b) for t, b in self.history) if self.history else 1

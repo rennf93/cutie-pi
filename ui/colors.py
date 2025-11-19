@@ -13,6 +13,7 @@ def _init_colors():
     theme = get_theme()
     _colors = theme.colors.copy()
     _colors["_theme_name"] = theme.name
+    _colors["_use_glow"] = theme.use_glow
 
 
 def reload_theme(name: str = None) -> None:
@@ -23,11 +24,25 @@ def reload_theme(name: str = None) -> None:
     theme = get_theme(name)
     _colors = theme.colors.copy()
     _colors["_theme_name"] = theme.name
+    _colors["_use_glow"] = theme.use_glow
 
 
 def get_current_theme_name() -> str:
     """Get the name of the currently loaded theme"""
     return _colors.get("_theme_name", "default")
+
+
+def use_glow() -> bool:
+    """Check if current theme uses glow effects"""
+    return _colors.get("_use_glow", False)
+
+
+def GLOW_PRIMARY():
+    return _colors.get("GLOW_PRIMARY", _colors.get("PRIMARY", (255, 255, 255)))
+
+
+def GLOW_SECONDARY():
+    return _colors.get("GLOW_SECONDARY", _colors.get("SECONDARY", (200, 200, 200)))
 
 
 # Initialize on first import

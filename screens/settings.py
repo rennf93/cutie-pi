@@ -9,6 +9,11 @@ from ui.themes import list_themes
 from config import VERSION
 
 
+def _get_radius():
+    """Get border radius based on theme"""
+    return 6 if colors.use_glow() else 0
+
+
 class SettingsScreen(BaseScreen):
     """Settings configuration display"""
 
@@ -129,7 +134,7 @@ class SettingsScreen(BaseScreen):
             border_color = colors.GREEN() if is_selected else colors.GRAY()
 
             # Simple line border instead of full box for compact look
-            pygame.draw.rect(surface, border_color, (15, y, 450, row_height), 1)
+            pygame.draw.rect(surface, border_color, (15, y, 450, row_height), 1, border_radius=_get_radius())
 
             # Label
             label_text = self.font.small.render(label, True, border_color)

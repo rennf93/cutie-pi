@@ -11,6 +11,113 @@ class UIComponents:
     def __init__(self, font: PixelFont) -> None:
         self.font = font
 
+    def _interpolate_color(
+        self,
+        color1: tuple[int, int, int],
+        color2: tuple[int, int, int],
+        factor: float
+    ) -> tuple[int, int, int]:
+        """Interpolate between two colors"""
+        return (
+            int(color1[0] + (color2[0] - color1[0]) * factor),
+            int(color1[1] + (color2[1] - color1[1]) * factor),
+            int(color1[2] + (color2[2] - color1[2]) * factor),
+        )
+
+    def draw_glow_border(
+        self,
+        surface: pygame.Surface,
+        rect: pygame.Rect,
+        color: tuple[int, int, int],
+        glow_color: tuple[int, int, int] = None,
+        border_radius: int = 8,
+        glow_size: int = 4,
+    ) -> None:
+        """Draw a rounded border with glow effect"""
+        x, y, w, h = rect
+
+        if glow_color is None:
+            glow_color = color
+
+        # Draw glow layers (outer to inner)
+        for i in range(glow_size, 0, -1):
+            alpha = int(60 * (1 - i / glow_size))
+            glow_surface = pygame.Surface((w + i * 4, h + i * 4), pygame.SRCALPHA)
+            glow_rect = pygame.Rect(i, i, w + i * 2, h + i * 2)
+            pygame.draw.rect(
+                glow_surface,
+                (*glow_color, alpha),
+                glow_rect,
+                border_radius=border_radius + i,
+                width=2
+            )
+            surface.blit(glow_surface, (x - i * 2, y - i * 2))
+
+        # Draw main border
+        pygame.draw.rect(
+            surface,
+            color,
+            rect,
+            border_radius=border_radius,
+            width=3
+        )
+
+        # Inner highlight (top-left)
+        highlight_color = self._interpolate_color(color, (255, 255, 255), 0.3)
+        inner_rect = pygame.Rect(x + 2, y + 2, w - 4, h - 4)
+        pygame.draw.rect(
+            surface,
+            highlight_color,
+            inner_rect,
+            border_radius=border_radius - 2,
+            width=1
+        )
+
+    def draw_gradient_bar(
+        self,
+        surface: pygame.Surface,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        percent: float,
+        color_start: tuple[int, int, int],
+        color_end: tuple[int, int, int] = None,
+        bg_color: tuple[int, int, int] = None,
+        border_radius: int = 4,
+    ) -> None:
+        """Draw a gradient progress bar with rounded corners"""
+        if bg_color is None:
+            bg_color = colors.DARK_GRAY()
+        if color_end is None:
+            color_end = color_start
+
+        # Background
+        pygame.draw.rect(surface, bg_color, (x, y, width, height), border_radius=border_radius)
+
+        # Filled portion
+        fill_width = int((percent / 100) * width)
+        if fill_width > 0:
+            # Create gradient surface
+            gradient_surface = pygame.Surface((fill_width, height), pygame.SRCALPHA)
+
+            for i in range(fill_width):
+                factor = i / max(fill_width - 1, 1)
+                col = self._interpolate_color(color_start, color_end, factor)
+                pygame.draw.line(gradient_surface, col, (i, 0), (i, height))
+
+            # Apply rounded corners by masking
+            mask_surface = pygame.Surface((fill_width, height), pygame.SRCALPHA)
+            pygame.draw.rect(mask_surface, (255, 255, 255, 255),
+                           (0, 0, fill_width, height), border_radius=border_radius)
+
+            # Combine
+            final_surface = pygame.Surface((fill_width, height), pygame.SRCALPHA)
+            final_surface.blit(gradient_surface, (0, 0))
+            final_surface.blit(mask_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+
+            surface.blit(final_surface, (x, y))
+
     def draw_pixel_border(
         self,
         surface: pygame.Surface,

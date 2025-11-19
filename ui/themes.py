@@ -6,9 +6,10 @@ import os
 class Theme:
     """Theme color definitions"""
 
-    def __init__(self, name: str, colors: dict) -> None:
+    def __init__(self, name: str, colors: dict, use_glow: bool = False) -> None:
         self.name = name
         self.colors = colors
+        self.use_glow = use_glow  # Whether to use glow effects
 
     def __getattr__(self, name: str):
         if name in self.colors:
@@ -237,6 +238,38 @@ THEMES = {
         "MAGENTA": (150, 0, 0),       # Medium
         "PURPLE": (100, 0, 0),        # Dark
     }),
+
+    "arcade": Theme("arcade", {
+        # Retrowave/arcade style with glows
+        # Purple borders, orange/yellow text, pink accents
+
+        # Basic colors
+        "BLACK": (10, 5, 20),         # Deep purple-black
+        "WHITE": (255, 200, 50),      # Golden yellow for text
+        "GRAY": (100, 80, 120),       # Muted purple-gray
+        "DARK_GRAY": (40, 30, 60),    # Dark purple
+        "DARKER_GRAY": (25, 20, 40),  # Darker purple
+        # Theme colors
+        "PRIMARY": (150, 50, 255),    # Purple (borders)
+        "SECONDARY": (255, 100, 200), # Pink
+        "ACCENT": (255, 200, 50),     # Golden yellow
+        "SUCCESS": (100, 255, 150),   # Mint green
+        "WARNING": (255, 150, 50),    # Orange
+        "ERROR": (255, 50, 100),      # Hot pink
+        "INFO": (100, 200, 255),      # Cyan
+        # Specific colors
+        "GREEN": (100, 255, 150),     # Mint
+        "DARK_GREEN": (50, 200, 100), # Darker mint
+        "RED": (255, 50, 100),        # Hot pink
+        "ORANGE": (255, 150, 50),     # Orange
+        "YELLOW": (255, 200, 50),     # Golden
+        "CYAN": (100, 200, 255),      # Cyan
+        "MAGENTA": (255, 100, 200),   # Pink
+        "PURPLE": (150, 50, 255),     # Purple
+        # Glow colors (for arcade effects)
+        "GLOW_PRIMARY": (200, 100, 255),   # Light purple glow
+        "GLOW_SECONDARY": (255, 150, 220), # Light pink glow
+    }, use_glow=True),
 }
 
 
