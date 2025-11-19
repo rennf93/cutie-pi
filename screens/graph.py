@@ -2,7 +2,7 @@
 
 import pygame
 from .base import BaseScreen
-from ui.colors import WHITE, GREEN, RED, DARK_GRAY, GRAY, BLACK
+from ui import colors
 from ui.fonts import PixelFont
 from ui.components import UIComponents
 
@@ -26,14 +26,14 @@ class GraphScreen(BaseScreen):
 
     def draw(self, surface: pygame.Surface) -> None:
         """Draw the graph screen"""
-        surface.fill(BLACK)
+        surface.fill(colors.BLACK())
 
         # Title
-        title = self.font.medium.render("QUERY HISTORY", True, GREEN)
+        title = self.font.medium.render("QUERY HISTORY", True, colors.GREEN())
         surface.blit(title, (10, 10))
 
         if not self.history:
-            no_data = self.font.small.render("NO DATA", True, GRAY)
+            no_data = self.font.small.render("NO DATA", True, colors.GRAY())
             surface.blit(no_data, (200, 150))
             return
 
@@ -44,7 +44,7 @@ class GraphScreen(BaseScreen):
         graph_height = 230
 
         # Draw graph background
-        pygame.draw.rect(surface, DARK_GRAY, (graph_x, graph_y, graph_width, graph_height))
+        pygame.draw.rect(surface, colors.DARK_GRAY(), (graph_x, graph_y, graph_width, graph_height))
 
         # Find max value for scaling
         max_val = max(max(t, b) for t, b in self.history) if self.history else 1
@@ -62,7 +62,7 @@ class GraphScreen(BaseScreen):
             if total_height > 0:
                 pygame.draw.rect(
                     surface,
-                    GREEN,
+                    colors.GREEN(),
                     (x, graph_y + graph_height - total_height, bar_width - 1, total_height),
                 )
 
@@ -71,27 +71,27 @@ class GraphScreen(BaseScreen):
             if blocked_height > 0:
                 pygame.draw.rect(
                     surface,
-                    RED,
+                    colors.RED(),
                     (x, graph_y + graph_height - blocked_height, bar_width - 1, blocked_height),
                 )
 
         # Y-axis labels
-        max_label = self.font.tiny.render(str(max_val), True, WHITE)
+        max_label = self.font.tiny.render(str(max_val), True, colors.WHITE())
         surface.blit(max_label, (graph_x - max_label.get_width() - 5, graph_y))
 
-        zero_label = self.font.tiny.render("0", True, WHITE)
+        zero_label = self.font.tiny.render("0", True, colors.WHITE())
         surface.blit(zero_label, (graph_x - zero_label.get_width() - 5, graph_y + graph_height - 10))
 
         # Legend
         legend_y = 280
-        pygame.draw.rect(surface, GREEN, (10, legend_y, 10, 10))
-        total_label = self.font.tiny.render("TOTAL", True, WHITE)
+        pygame.draw.rect(surface, colors.GREEN(), (10, legend_y, 10, 10))
+        total_label = self.font.tiny.render("TOTAL", True, colors.WHITE())
         surface.blit(total_label, (25, legend_y))
 
-        pygame.draw.rect(surface, RED, (100, legend_y, 10, 10))
-        blocked_label = self.font.tiny.render("BLOCKED", True, WHITE)
+        pygame.draw.rect(surface, colors.RED(), (100, legend_y, 10, 10))
+        blocked_label = self.font.tiny.render("BLOCKED", True, colors.WHITE())
         surface.blit(blocked_label, (115, legend_y))
 
         # Time labels
-        time_label = self.font.tiny.render("LAST 4 HOURS", True, WHITE)
+        time_label = self.font.tiny.render("LAST 4 HOURS", True, colors.WHITE())
         surface.blit(time_label, (graph_x + graph_width - time_label.get_width(), 280))

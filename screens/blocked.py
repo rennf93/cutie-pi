@@ -2,7 +2,7 @@
 
 import pygame
 from .base import BaseScreen
-from ui.colors import WHITE, RED, YELLOW, GRAY, BLACK
+from ui import colors
 from ui.fonts import PixelFont
 from ui.components import UIComponents
 
@@ -20,14 +20,14 @@ class BlockedScreen(BaseScreen):
 
     def draw(self, surface: pygame.Surface) -> None:
         """Draw the blocked domains screen"""
-        surface.fill(BLACK)
+        surface.fill(colors.BLACK())
 
         # Title
-        title = self.font.medium.render("TOP BLOCKED", True, RED)
+        title = self.font.medium.render("TOP BLOCKED", True, colors.RED())
         surface.blit(title, (10, 10))
 
         if not self.blocked_domains:
-            text = self.font.medium.render("No data", True, GRAY)
+            text = self.font.medium.render("No data", True, colors.GRAY())
             surface.blit(text, (480 // 2 - 40, 320 // 2))
             return
 
@@ -45,19 +45,19 @@ class BlockedScreen(BaseScreen):
                 pygame.draw.rect(surface, (20, 20, 20), (10, y, 480 - 20, row_height))
 
             # Rank
-            rank_text = self.font.small.render(f"{i + 1}.", True, YELLOW)
+            rank_text = self.font.small.render(f"{i + 1}.", True, colors.YELLOW())
             surface.blit(rank_text, (15, y + 8))
 
             # Domain
-            domain_text = self.font.small.render(domain, True, WHITE)
+            domain_text = self.font.small.render(domain, True, colors.WHITE())
             surface.blit(domain_text, (50, y + 8))
 
             # Count text - right aligned before bar
-            count_text = self.font.small.render(str(count), True, WHITE)
+            count_text = self.font.small.render(str(count), True, colors.WHITE())
             surface.blit(count_text, (480 - 120, y + 8))
 
             # Count bar - right side
             bar_width = int((count / max_count) * 60)
-            pygame.draw.rect(surface, RED, (480 - 70, y + 8, bar_width, 12))
+            pygame.draw.rect(surface, colors.RED(), (480 - 70, y + 8, bar_width, 12))
 
             y += row_height

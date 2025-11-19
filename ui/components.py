@@ -1,7 +1,7 @@
 """Reusable UI components for the dashboard"""
 
 import pygame
-from .colors import WHITE, DARK_GRAY, DARKER_GRAY
+from . import colors
 from .fonts import PixelFont
 
 
@@ -35,9 +35,12 @@ class UIComponents:
         height: int,
         percent: float,
         color: tuple[int, int, int],
-        bg_color: tuple[int, int, int] = DARK_GRAY,
+        bg_color: tuple[int, int, int] = None,
     ) -> None:
         """Draw a segmented pixel-art progress bar"""
+        if bg_color is None:
+            bg_color = colors.DARK_GRAY()
+
         # Chunky segments - calculate how many fit
         segment_width = 6
         segment_gap = 2
@@ -60,7 +63,7 @@ class UIComponents:
             if i < filled_segments:
                 pygame.draw.rect(surface, color, (seg_x, y + 2, segment_width, height - 4))
             else:
-                pygame.draw.rect(surface, DARKER_GRAY, (seg_x, y + 2, segment_width, height - 4))
+                pygame.draw.rect(surface, colors.DARKER_GRAY(), (seg_x, y + 2, segment_width, height - 4))
 
     def draw_box(
         self,
@@ -72,9 +75,12 @@ class UIComponents:
         label: str,
         value: str,
         border_color: tuple[int, int, int],
-        value_color: tuple[int, int, int] = WHITE,
+        value_color: tuple[int, int, int] = None,
     ) -> None:
         """Draw a labeled box with a value"""
+        if value_color is None:
+            value_color = colors.WHITE()
+
         rect = pygame.Rect(x, y, width, height)
         self.draw_pixel_border(surface, rect, border_color)
 
@@ -110,7 +116,7 @@ class UIComponents:
         start_x = (surface.get_width() - total_width) // 2
 
         for i in range(total):
-            color = WHITE if i == current else DARK_GRAY
+            color = colors.WHITE() if i == current else colors.DARK_GRAY()
             pygame.draw.rect(
                 surface,
                 color,
