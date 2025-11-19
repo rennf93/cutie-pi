@@ -8,6 +8,8 @@ import pygame
 import requests
 import time
 import math
+import os
+import subprocess
 from collections import deque
 from datetime import datetime
 
@@ -17,6 +19,9 @@ PASSWORD_FILE = "/home/renzof/.pihole_password"
 SCREEN_WIDTH = 480
 SCREEN_HEIGHT = 320
 FPS = 30
+
+# Themes
+# TODO
 
 # Colors (retro palette)
 BLACK = (0, 0, 0)
@@ -31,16 +36,26 @@ PURPLE = (180, 100, 255)
 GRAY = (100, 100, 100)
 DARK_GRAY = (40, 40, 40)
 
+
 class PixelFont:
     """Simple pixel font renderer"""
-    def __init__(self):
+
+    def __init__(self) -> None:
         pygame.font.init()
         # Use a monospace font for that retro feel
         try:
-            self.large = pygame.font.Font("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 32)
-            self.medium = pygame.font.Font("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 20)
-            self.small = pygame.font.Font("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 14)
-            self.tiny = pygame.font.Font("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 10)
+            self.large = pygame.font.Font(
+                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 32
+            )
+            self.medium = pygame.font.Font(
+                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 20
+            )
+            self.small = pygame.font.Font(
+                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 14
+            )
+            self.tiny = pygame.font.Font(
+                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 10
+            )
         except Exception as e:
             print(f"Error loading fonts: {e}")
             # Fallback to default
@@ -49,30 +64,30 @@ class PixelFont:
             self.small = pygame.font.SysFont("monospace", 14)
             self.tiny = pygame.font.SysFont("monospace", 10)
 
+
 class PiholeAPI:
     """Pi-hole API v6 handler"""
-    def __init__(self):
+
+    def __init__(self) -> None:
         self.session_id = None
         self.password = self._load_password()
         self._authenticate()
 
-    def _load_password(self):
+    def _load_password(self) -> str:
         try:
-            with open(PASSWORD_FILE, 'r') as f:
+            with open(PASSWORD_FILE, "r") as f:
                 return f.read().strip()
         except Exception as e:
             print(f"Error loading password: {e}")
             return ""
 
-    def _authenticate(self):
+    def _authenticate(self) -> None:
         """Authenticate with Pi-hole API v6"""
         if not self.password:
             return
         try:
             response = requests.post(
-                f"{PIHOLE_API}/auth",
-                json={"password": self.password},
-                timeout=5
+                f"{PIHOLE_API}/auth", json={"password": self.password}, timeout=5
             )
             if response.ok:
                 data = response.json()
@@ -81,17 +96,15 @@ class PiholeAPI:
             print(f"Error authenticating: {e}")
             pass
 
-    def _get(self, endpoint):
+    def _get(self, endpoint: str) -> dict:
         """Make authenticated GET request"""
-        headers = {}
+        headers: dict[str, str] = {}
         if self.session_id:
             headers["sid"] = self.session_id
 
         try:
             response = requests.get(
-                f"{PIHOLE_API}{endpoint}",
-                headers=headers,
-                timeout=5
+                f"{PIHOLE_API}{endpoint}", headers=headers, timeout=5
             )
             if response.ok:
                 return response.json()
@@ -100,7 +113,7 @@ class PiholeAPI:
             pass
         return {}
 
-    def get_summary(self):
+    def get_summary(self) -> dict:
         """Get Pi-hole summary stats"""
         data = self._get("/stats/summary")
 
@@ -111,11 +124,13 @@ class PiholeAPI:
             "ads_blocked_today": queries.get("blocked", 0),
             "ads_percentage_today": queries.get("percent_blocked", 0),
             "unique_clients": queries.get("unique_clients", 0),
-            "domains_being_blocked": data.get("gravity", {}).get("domains_being_blocked", 0),
-            "status": "enabled" if data.get("blocking", True) else "disabled"
+            "domains_being_blocked": data.get("gravity", {}).get(
+                "domains_being_blocked", 0
+            ),
+            "status": "enabled" if data.get("blocking", True) else "disabled",
         }
 
-    def get_top_blocked(self, count=10):
+    def get_top_blocked(self, count: int = 10) -> dict:
         """Get top blocked domains"""
         data = self._get(f"/stats/top_domains?blocked=true&count={count}")
 
@@ -125,7 +140,7 @@ class PiholeAPI:
             result[item.get("domain", "unknown")] = item.get("count", 0)
         return result
 
-    def get_top_clients(self, count=10):
+    def get_top_clients(self, count: int = 10) -> dict:
         """Get top clients"""
         data = self._get(f"/stats/top_clients?count={count}")
 
@@ -136,7 +151,7 @@ class PiholeAPI:
             result[name] = item.get("count", 0)
         return result
 
-    def get_overtime(self):
+    def get_overtime(self) -> dict:
         """Get queries over time"""
         data = self._get("/history")
 
@@ -149,54 +164,59 @@ class PiholeAPI:
             domains[timestamp] = item.get("total", 0)
             ads[timestamp] = item.get("blocked", 0)
 
-        return {
-            "domains_over_time": domains,
-            "ads_over_time": ads
-        }
+        return {"domains_over_time": domains, "ads_over_time": ads}
 
 
 class Screen:
     """Base screen class"""
-    def __init__(self, dashboard):
+
+    def __init__(self, dashboard: "Dashboard") -> None:
         self.dashboard = dashboard
         self.font = dashboard.font
 
-    def update(self, data):
+    def update(self, data: dict) -> None:
         pass
 
-    def draw(self, surface):
+    def draw(self, surface: pygame.Surface) -> None:
         pass
 
-    def draw_header(self, surface, title):
+    def draw_header(self, surface: pygame.Surface, title: str) -> None:
         """Draw screen header"""
         pygame.draw.rect(surface, DARK_GREEN, (0, 0, SCREEN_WIDTH, 40))
         text = self.font.medium.render(title, True, BLACK)
         surface.blit(text, (10, 8))
 
         # Draw page indicators
-        for i in range(4):
-            x = SCREEN_WIDTH - 60 + i * 15
+        num_screens = len(self.dashboard.screens)
+        for i in range(num_screens):
+            x = SCREEN_WIDTH - (num_screens * 15) + i * 15
             color = WHITE if i == self.dashboard.current_screen else GRAY
             pygame.draw.circle(surface, color, (x, 20), 4)
 
-    def draw_pixel_border(self, surface, rect, color):
+    def draw_pixel_border(
+        self,
+        surface: pygame.Surface,
+        rect: tuple[int, int, int, int],
+        color: tuple[int, int, int],
+    ) -> None:
         """Draw a pixelated border"""
         x, y, w, h = rect
         pygame.draw.rect(surface, color, rect, 2)
         # Corner pixels for that 8-bit feel
-        for corner in [(x, y), (x+w-4, y), (x, y+h-4), (x+w-4, y+h-4)]:
+        for corner in [(x, y), (x + w - 4, y), (x, y + h - 4), (x + w - 4, y + h - 4)]:
             pygame.draw.rect(surface, color, (*corner, 4, 4))
 
 
 class StatsScreen(Screen):
     """Main stats screen with animated counters"""
-    def __init__(self, dashboard):
+
+    def __init__(self, dashboard: "Dashboard") -> None:
         super().__init__(dashboard)
         self.animation_offset = 0
         self.displayed_queries = 0
         self.displayed_blocked = 0
 
-    def update(self, data):
+    def update(self, data: dict) -> None:
         # Smooth counter animation
         target_queries = data.get("dns_queries_today", 0)
         target_blocked = data.get("ads_blocked_today", 0)
@@ -206,7 +226,7 @@ class StatsScreen(Screen):
 
         self.animation_offset = (self.animation_offset + 1) % 360
 
-    def draw(self, surface):
+    def draw(self, surface: pygame.Surface) -> None:
         surface.fill(BLACK)
         self.draw_header(surface, "< PI-HOLE STATS >")
 
@@ -266,17 +286,31 @@ class StatsScreen(Screen):
         date_text = self.font.tiny.render(date_str, True, GRAY)
         surface.blit(date_text, (280, 275))
 
-    def draw_gauge(self, surface, x, y, radius, percent):
+    def draw_gauge(
+        self, surface: pygame.Surface, x: int, y: int, radius: int, percent: int
+    ) -> None:
         """Draw animated percentage gauge"""
         # Background arc
-        pygame.draw.arc(surface, DARK_GRAY, (x-radius, y-radius, radius*2, radius*2),
-                       math.pi * 0.8, math.pi * 2.2, 8)
+        pygame.draw.arc(
+            surface,
+            DARK_GRAY,
+            (x - radius, y - radius, radius * 2, radius * 2),
+            math.pi * 0.8,
+            math.pi * 2.2,
+            8,
+        )
 
         # Percentage arc
         end_angle = math.pi * 0.8 + (math.pi * 1.4 * percent / 100)
         color = GREEN if percent > 50 else ORANGE if percent > 20 else RED
-        pygame.draw.arc(surface, color, (x-radius, y-radius, radius*2, radius*2),
-                       math.pi * 0.8, end_angle, 8)
+        pygame.draw.arc(
+            surface,
+            color,
+            (x - radius, y - radius, radius * 2, radius * 2),
+            math.pi * 0.8,
+            end_angle,
+            8,
+        )
 
         # Center text
         text = self.font.large.render(f"{percent:.1f}%", True, color)
@@ -290,12 +324,13 @@ class StatsScreen(Screen):
 
 class GraphScreen(Screen):
     """Query graph over time"""
-    def __init__(self, dashboard):
-        super().__init__(dashboard)
-        self.queries_history = deque(maxlen=48)  # 8 hours of 10-min intervals
-        self.blocked_history = deque(maxlen=48)
 
-    def update(self, data):
+    def __init__(self, dashboard: "Dashboard") -> None:
+        super().__init__(dashboard)
+        self.queries_history: deque[int] = deque(maxlen=48)  # 8 hours of 10-min intervals
+        self.blocked_history: deque[int] = deque(maxlen=48)
+
+    def update(self, data: dict) -> None:
         overtime = self.dashboard.overtime_data
         if overtime:
             domains = overtime.get("domains_over_time", {})
@@ -306,13 +341,13 @@ class GraphScreen(Screen):
             if ads:
                 self.blocked_history = deque(list(ads.values())[-48:], maxlen=48)
 
-    def draw(self, surface):
+    def draw(self, surface: pygame.Surface) -> None:
         surface.fill(BLACK)
         self.draw_header(surface, "< QUERY GRAPH >")
 
         if not self.queries_history:
             text = self.font.medium.render("Loading data...", True, GRAY)
-            surface.blit(text, (SCREEN_WIDTH//2 - 80, SCREEN_HEIGHT//2))
+            surface.blit(text, (SCREEN_WIDTH // 2 - 80, SCREEN_HEIGHT // 2))
             return
 
         # Graph area
@@ -324,11 +359,21 @@ class GraphScreen(Screen):
         # Draw grid
         for i in range(5):
             y = graph_y + i * (graph_h // 4)
-            pygame.draw.line(surface, DARK_GRAY, (graph_x, y), (graph_x + graph_w, y), 1)
+            pygame.draw.line(
+                surface, DARK_GRAY, (graph_x, y), (graph_x + graph_w, y), 1
+            )
 
         # Draw axes
-        pygame.draw.line(surface, WHITE, (graph_x, graph_y), (graph_x, graph_y + graph_h), 2)
-        pygame.draw.line(surface, WHITE, (graph_x, graph_y + graph_h), (graph_x + graph_w, graph_y + graph_h), 2)
+        pygame.draw.line(
+            surface, WHITE, (graph_x, graph_y), (graph_x, graph_y + graph_h), 2
+        )
+        pygame.draw.line(
+            surface,
+            WHITE,
+            (graph_x, graph_y + graph_h),
+            (graph_x + graph_w, graph_y + graph_h),
+            2,
+        )
 
         # Calculate max for scaling
         max_val = max(max(self.queries_history) if self.queries_history else 1, 1)
@@ -336,16 +381,22 @@ class GraphScreen(Screen):
         # Draw bars
         bar_width = graph_w // len(self.queries_history) - 1
 
-        for i, (queries, blocked) in enumerate(zip(self.queries_history, self.blocked_history)):
+        for i, (queries, blocked) in enumerate(
+            zip(self.queries_history, self.blocked_history)
+        ):
             x = graph_x + i * (bar_width + 1)
 
             # Queries bar
             h = int((queries / max_val) * graph_h)
-            pygame.draw.rect(surface, DARK_GREEN, (x, graph_y + graph_h - h, bar_width, h))
+            pygame.draw.rect(
+                surface, DARK_GREEN, (x, graph_y + graph_h - h, bar_width, h)
+            )
 
             # Blocked portion
             h_blocked = int((blocked / max_val) * graph_h)
-            pygame.draw.rect(surface, RED, (x, graph_y + graph_h - h_blocked, bar_width, h_blocked))
+            pygame.draw.rect(
+                surface, RED, (x, graph_y + graph_h - h_blocked, bar_width, h_blocked)
+            )
 
         # Legend
         pygame.draw.rect(surface, DARK_GREEN, (graph_x, graph_y + graph_h + 15, 10, 10))
@@ -365,18 +416,19 @@ class GraphScreen(Screen):
 
 class TopBlockedScreen(Screen):
     """Top blocked domains"""
-    def __init__(self, dashboard):
+
+    def __init__(self, dashboard: "Dashboard") -> None:
         super().__init__(dashboard)
         self.scroll_offset = 0
 
-    def draw(self, surface):
+    def draw(self, surface: pygame.Surface) -> None:
         surface.fill(BLACK)
         self.draw_header(surface, "< TOP BLOCKED >")
 
         blocked = self.dashboard.top_blocked
         if not blocked:
             text = self.font.medium.render("No data", True, GRAY)
-            surface.blit(text, (SCREEN_WIDTH//2 - 40, SCREEN_HEIGHT//2))
+            surface.blit(text, (SCREEN_WIDTH // 2 - 40, SCREEN_HEIGHT // 2))
             return
 
         y = 60
@@ -387,10 +439,12 @@ class TopBlockedScreen(Screen):
 
             # Alternating row colors
             if i % 2 == 0:
-                pygame.draw.rect(surface, (20, 20, 20), (10, y-2, SCREEN_WIDTH-20, 28))
+                pygame.draw.rect(
+                    surface, (20, 20, 20), (10, y - 2, SCREEN_WIDTH - 20, 28)
+                )
 
             # Rank
-            rank_text = self.font.small.render(f"{i+1}.", True, YELLOW)
+            rank_text = self.font.small.render(f"{i + 1}.", True, YELLOW)
             surface.blit(rank_text, (15, y))
 
             # Domain
@@ -411,14 +465,15 @@ class TopBlockedScreen(Screen):
 
 class ClientsScreen(Screen):
     """Top clients"""
-    def draw(self, surface):
+
+    def draw(self, surface: pygame.Surface) -> None:
         surface.fill(BLACK)
         self.draw_header(surface, "< TOP CLIENTS >")
 
         clients = self.dashboard.top_clients
         if not clients:
             text = self.font.medium.render("No data", True, GRAY)
-            surface.blit(text, (SCREEN_WIDTH//2 - 40, SCREEN_HEIGHT//2))
+            surface.blit(text, (SCREEN_WIDTH // 2 - 40, SCREEN_HEIGHT // 2))
             return
 
         y = 60
@@ -429,11 +484,13 @@ class ClientsScreen(Screen):
 
             # Alternating row colors
             if i % 2 == 0:
-                pygame.draw.rect(surface, (20, 20, 20), (10, y-2, SCREEN_WIDTH-20, 28))
+                pygame.draw.rect(
+                    surface, (20, 20, 20), (10, y - 2, SCREEN_WIDTH - 20, 28)
+                )
 
             # Rank with color coding
             colors = [YELLOW, WHITE, WHITE, GRAY, GRAY, GRAY, GRAY, GRAY]
-            rank_text = self.font.small.render(f"{i+1}.", True, colors[i])
+            rank_text = self.font.small.render(f"{i + 1}.", True, colors[i])
             surface.blit(rank_text, (15, y))
 
             # Client name/IP
@@ -452,9 +509,213 @@ class ClientsScreen(Screen):
             y += 30
 
 
+class SystemScreen(Screen):
+    """System info screen - CPU, RAM, Temp, etc."""
+
+    def __init__(self, dashboard: "Dashboard") -> None:
+        super().__init__(dashboard)
+        self.cpu_percent = 0
+        self.mem_percent = 0
+        self.mem_used = 0
+        self.mem_total = 0
+        self.temp = 0
+        self.uptime = ""
+        self.ip_address = ""
+        self.hostname = ""
+        self.fan_speed = 0
+        self.last_update = 0
+
+    def get_system_info(self) -> None:
+        """Fetch system information"""
+        try:
+            # CPU usage
+            with open("/proc/stat", "r") as f:
+                cpu_line = f.readline()
+                cpu_times = list(map(int, cpu_line.split()[1:]))
+                idle = cpu_times[3]
+                total = sum(cpu_times)
+                if hasattr(self, "_last_cpu") and isinstance(self._last_cpu, tuple[int, int]):
+                    idle_delta = idle - self._last_cpu[0]
+                    total_delta = total - self._last_cpu[1]
+                    self.cpu_percent = (
+                        100 * (1 - idle_delta / total_delta) if total_delta > 0 else 0
+                    )
+                self._last_cpu = (idle, total)
+
+            # Memory
+            with open("/proc/meminfo", "r") as f:
+                meminfo: dict[str, int] = {}
+                for line in f:
+                    parts = line.split()
+                    meminfo[parts[0].rstrip(":")] = int(parts[1])
+                self.mem_total = meminfo.get("MemTotal", 0) / 1024  # MB
+                mem_available = meminfo.get("MemAvailable", 0) / 1024
+                self.mem_used = self.mem_total - mem_available
+                self.mem_percent = (
+                    (self.mem_used / self.mem_total * 100) if self.mem_total > 0 else 0
+                )
+
+            # Temperature
+            try:
+                with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
+                    self.temp = int(f.read().strip()) / 1000
+            except Exception as e:
+                print(f"Error getting temperature: {e}")
+                self.temp = 0
+
+            # Uptime
+            with open("/proc/uptime", "r") as f:
+                uptime_secs = float(f.read().split()[0])
+                days = int(uptime_secs // 86400)
+                hours = int((uptime_secs % 86400) // 3600)
+                mins = int((uptime_secs % 3600) // 60)
+                if days > 0:
+                    self.uptime = f"{days}d {hours}h {mins}m"
+                else:
+                    self.uptime = f"{hours}h {mins}m"
+
+            # IP Address
+            try:
+                result = subprocess.run(
+                    ["hostname", "-I"], capture_output=True, text=True, timeout=2
+                )
+                self.ip_address = (
+                    result.stdout.strip().split()[0] if result.stdout.strip() else "N/A"
+                )
+            except Exception as e:
+                print(f"Error getting IP address: {e}")
+                self.ip_address = "N/A"
+
+            # Hostname
+            try:
+                with open("/etc/hostname", "r") as f:
+                    self.hostname = f.read().strip()
+            except Exception as e:
+                print(f"Error getting hostname: {e}")
+                self.hostname = "unknown"
+
+            # Fan speed (PWM)
+            try:
+                with open("/sys/class/hwmon/hwmon1/pwm1", "r") as f:
+                    self.fan_speed = int(f.read().strip())
+            except Exception as e:
+                print(f"Error getting fan speed: {e}")
+                try:
+                    with open("/sys/class/hwmon/hwmon0/pwm1", "r") as f:
+                        self.fan_speed = int(f.read().strip())
+                except Exception as e:
+                    print(f"Error getting fan speed: {e}")
+                    self.fan_speed = 0
+
+        except Exception as e:
+            print(f"Error getting system info: {e}")
+            pass
+
+    def update(self, data: dict) -> None:
+        current_time = time.time()
+        if current_time - self.last_update > 2:  # Update every 2 seconds
+            self.get_system_info()
+            self.last_update = current_time
+
+    def draw(self, surface: pygame.Surface) -> None:
+        surface.fill(BLACK)
+        self.draw_header(surface, "< SYSTEM INFO >")
+
+        y = 55
+
+        # Hostname and IP
+        text = self.font.medium.render(self.hostname, True, CYAN)
+        surface.blit(text, (20, y))
+        text = self.font.small.render(self.ip_address, True, GRAY)
+        surface.blit(text, (20, y + 25))
+
+        # Date and time (right side)
+        now = datetime.now()
+        time_str = now.strftime("%H:%M")
+        date_str = now.strftime("%a %d %b")
+
+        time_text = self.font.large.render(time_str, True, WHITE)
+        surface.blit(time_text, (SCREEN_WIDTH - 120, y))
+        date_text = self.font.tiny.render(date_str, True, GRAY)
+        surface.blit(date_text, (SCREEN_WIDTH - 120, y + 35))
+
+        y = 120
+
+        # CPU bar
+        self.draw_pixel_border(surface, (20, y, 200, 40), GREEN)
+        text = self.font.tiny.render("CPU", True, GREEN)
+        surface.blit(text, (25, y + 3))
+
+        # CPU bar fill
+        bar_width = int((self.cpu_percent / 100) * 180)
+        color = (
+            GREEN if self.cpu_percent < 70 else ORANGE if self.cpu_percent < 90 else RED
+        )
+        pygame.draw.rect(surface, color, (30, y + 18, bar_width, 15))
+
+        percent_text = self.font.small.render(f"{self.cpu_percent:.0f}%", True, WHITE)
+        surface.blit(percent_text, (160, y + 15))
+
+        # RAM bar
+        self.draw_pixel_border(surface, (260, y, 200, 40), PURPLE)
+        text = self.font.tiny.render("RAM", True, PURPLE)
+        surface.blit(text, (265, y + 3))
+
+        bar_width = int((self.mem_percent / 100) * 180)
+        color = (
+            PURPLE
+            if self.mem_percent < 70
+            else ORANGE
+            if self.mem_percent < 90
+            else RED
+        )
+        pygame.draw.rect(surface, color, (270, y + 18, bar_width, 15))
+
+        percent_text = self.font.small.render(f"{self.mem_percent:.0f}%", True, WHITE)
+        surface.blit(percent_text, (400, y + 15))
+
+        y = 180
+
+        # Temperature
+        self.draw_pixel_border(surface, (20, y, 200, 60), ORANGE)
+        text = self.font.tiny.render("TEMPERATURE", True, ORANGE)
+        surface.blit(text, (25, y + 5))
+
+        temp_color = GREEN if self.temp < 60 else ORANGE if self.temp < 75 else RED
+        temp_text = self.font.large.render(f"{self.temp:.1f}°C", True, temp_color)
+        surface.blit(temp_text, (30, y + 22))
+
+        # Memory details
+        self.draw_pixel_border(surface, (260, y, 200, 60), CYAN)
+        text = self.font.tiny.render("MEMORY", True, CYAN)
+        surface.blit(text, (265, y + 5))
+
+        mem_text = self.font.small.render(
+            f"{self.mem_used:.0f}/{self.mem_total:.0f}MB", True, WHITE
+        )
+        surface.blit(mem_text, (270, y + 28))
+
+        # Uptime
+        y = 260
+        text = self.font.tiny.render("UPTIME", True, GRAY)
+        surface.blit(text, (20, y))
+        uptime_text = self.font.medium.render(self.uptime, True, WHITE)
+        surface.blit(uptime_text, (20, y + 15))
+
+        # Fan speed (right side)
+        text = self.font.tiny.render("FAN", True, GRAY)
+        surface.blit(text, (SCREEN_WIDTH - 120, y))
+        fan_percent = int((self.fan_speed / 255) * 100)
+        fan_text = self.font.medium.render(
+            f"{fan_percent}%", True, WHITE if fan_percent > 0 else GRAY
+        )
+        surface.blit(fan_text, (SCREEN_WIDTH - 120, y + 15))
+
+
 class Dashboard:
     """Main dashboard controller"""
-    def __init__(self):
+
+    def __init__(self) -> None:
         pygame.init()
 
         # Set up display
@@ -467,17 +728,18 @@ class Dashboard:
         self.api = PiholeAPI()
 
         # Data
-        self.data = {}
-        self.top_blocked = {}
-        self.top_clients = {}
-        self.overtime_data = {}
+        self.data: dict = {}
+        self.top_blocked: dict = {}
+        self.top_clients: dict = {}
+        self.overtime_data: dict = {}
 
         # Screens
         self.screens = [
             StatsScreen(self),
             GraphScreen(self),
             TopBlockedScreen(self),
-            ClientsScreen(self)
+            ClientsScreen(self),
+            SystemScreen(self),
         ]
         self.current_screen = 0
 
@@ -491,14 +753,14 @@ class Dashboard:
         self.transition_direction = 0
         self.transition_progress = 0
 
-    def fetch_data(self):
+    def fetch_data(self) -> None:
         """Fetch all data from Pi-hole API"""
         self.data = self.api.get_summary()
         self.top_blocked = self.api.get_top_blocked()
         self.top_clients = self.api.get_top_clients()
         self.overtime_data = self.api.get_overtime()
 
-    def handle_events(self):
+    def handle_events(self) -> bool:
         """Handle input events"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -527,7 +789,7 @@ class Dashboard:
 
         return True
 
-    def next_screen(self):
+    def next_screen(self) -> None:
         """Transition to next screen"""
         if not self.transitioning:
             self.transitioning = True
@@ -535,7 +797,7 @@ class Dashboard:
             self.transition_progress = 0
             self.next_screen_index = (self.current_screen + 1) % len(self.screens)
 
-    def prev_screen(self):
+    def prev_screen(self) -> None:
         """Transition to previous screen"""
         if not self.transitioning:
             self.transitioning = True
@@ -543,7 +805,7 @@ class Dashboard:
             self.transition_progress = 0
             self.next_screen_index = (self.current_screen - 1) % len(self.screens)
 
-    def update(self):
+    def update(self) -> None:
         """Update dashboard state"""
         # Fetch new data periodically
         current_time = time.time()
@@ -556,17 +818,19 @@ class Dashboard:
 
         # Handle transition animation
         if self.transitioning:
-            self.transition_progress += 0.15
+            self.transition_progress: float = self.transition_progress + 0.15
             if self.transition_progress >= 1:
-                self.current_screen = self.next_screen_index
-                self.transitioning = False
-                self.transition_progress = 0
+                self.current_screen: int = self.next_screen_index
+                self.transitioning: bool = False
+                self.transition_progress: float = 0
 
-    def draw(self):
+    def draw(self) -> None:
         """Draw the dashboard"""
         if self.transitioning:
             # Draw transition animation
-            offset = int(self.transition_progress * SCREEN_WIDTH * self.transition_direction)
+            offset = int(
+                self.transition_progress * SCREEN_WIDTH * self.transition_direction
+            )
 
             # Current screen sliding out
             current_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -583,7 +847,7 @@ class Dashboard:
 
         pygame.display.flip()
 
-    def run(self):
+    def run(self) -> None:
         """Main loop"""
         # Initial data fetch
         self.fetch_data()
