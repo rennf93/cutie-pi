@@ -133,6 +133,95 @@ class UIComponents:
         for corner in [(x, y), (x + w - block, y), (x, y + h - block), (x + w - block, y + h - block)]:
             pygame.draw.rect(surface, color, (*corner, block, block))
 
+    def draw_dashed_border(
+        self,
+        surface: pygame.Surface,
+        rect: pygame.Rect,
+        color: tuple[int, int, int],
+    ) -> None:
+        """Draw a dashed/dotted border - ocean wave feel"""
+        x, y, w, h = rect
+        dash_len = 8
+        gap_len = 4
+
+        # Top and bottom
+        for start_x in range(x, x + w, dash_len + gap_len):
+            end_x = min(start_x + dash_len, x + w)
+            pygame.draw.line(surface, color, (start_x, y), (end_x, y), 2)
+            pygame.draw.line(surface, color, (start_x, y + h - 1), (end_x, y + h - 1), 2)
+
+        # Left and right
+        for start_y in range(y, y + h, dash_len + gap_len):
+            end_y = min(start_y + dash_len, y + h)
+            pygame.draw.line(surface, color, (x, start_y), (x, end_y), 2)
+            pygame.draw.line(surface, color, (x + w - 1, start_y), (x + w - 1, end_y), 2)
+
+    def draw_double_border(
+        self,
+        surface: pygame.Surface,
+        rect: pygame.Rect,
+        color: tuple[int, int, int],
+    ) -> None:
+        """Draw a double-line border - cyberpunk tech feel"""
+        x, y, w, h = rect
+        # Outer border
+        pygame.draw.rect(surface, color, (x, y, w, h), 2)
+        # Inner border with gap
+        gap = 4
+        pygame.draw.rect(surface, color, (x + gap, y + gap, w - gap * 2, h - gap * 2), 1)
+
+    def draw_thick_border(
+        self,
+        surface: pygame.Surface,
+        rect: pygame.Rect,
+        color: tuple[int, int, int],
+    ) -> None:
+        """Draw a thick solid border - bold warm feel"""
+        x, y, w, h = rect
+        # Extra thick border
+        pygame.draw.rect(surface, color, (x, y, w, h), 5)
+
+    def draw_terminal_border(
+        self,
+        surface: pygame.Surface,
+        rect: pygame.Rect,
+        color: tuple[int, int, int],
+    ) -> None:
+        """Draw a terminal-style border with corner markers - matrix feel"""
+        x, y, w, h = rect
+        # Thin main border
+        pygame.draw.rect(surface, color, (x, y, w, h), 1)
+        # Corner brackets
+        bracket_len = 8
+        # Top-left
+        pygame.draw.line(surface, color, (x, y), (x + bracket_len, y), 2)
+        pygame.draw.line(surface, color, (x, y), (x, y + bracket_len), 2)
+        # Top-right
+        pygame.draw.line(surface, color, (x + w - bracket_len, y), (x + w, y), 2)
+        pygame.draw.line(surface, color, (x + w - 1, y), (x + w - 1, y + bracket_len), 2)
+        # Bottom-left
+        pygame.draw.line(surface, color, (x, y + h - 1), (x + bracket_len, y + h - 1), 2)
+        pygame.draw.line(surface, color, (x, y + h - bracket_len), (x, y + h), 2)
+        # Bottom-right
+        pygame.draw.line(surface, color, (x + w - bracket_len, y + h - 1), (x + w, y + h - 1), 2)
+        pygame.draw.line(surface, color, (x + w - 1, y + h - bracket_len), (x + w - 1, y + h), 2)
+
+    def draw_inverted_border(
+        self,
+        surface: pygame.Surface,
+        rect: pygame.Rect,
+        color: tuple[int, int, int],
+    ) -> None:
+        """Draw an inverted/inset border - ominous 666 feel"""
+        x, y, w, h = rect
+        # Dark outer edge (shadow)
+        dark = (max(0, color[0] // 3), max(0, color[1] // 3), max(0, color[2] // 3))
+        pygame.draw.line(surface, dark, (x, y), (x + w, y), 3)  # Top
+        pygame.draw.line(surface, dark, (x, y), (x, y + h), 3)  # Left
+        # Bright inner edge (highlight)
+        pygame.draw.line(surface, color, (x, y + h - 1), (x + w, y + h - 1), 2)  # Bottom
+        pygame.draw.line(surface, color, (x + w - 1, y), (x + w - 1, y + h), 2)  # Right
+
     def draw_chunky_bar(
         self,
         surface: pygame.Surface,
@@ -171,6 +260,139 @@ class UIComponents:
                 pygame.draw.rect(surface, color, (seg_x, y + 2, segment_width, height - 4))
             else:
                 pygame.draw.rect(surface, colors.DARKER_GRAY(), (seg_x, y + 2, segment_width, height - 4))
+
+    def draw_dashed_bar(
+        self,
+        surface: pygame.Surface,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        percent: float,
+        color: tuple[int, int, int],
+        bg_color: tuple[int, int, int] = None,
+    ) -> None:
+        """Draw a bar with dashed fill - ocean wave feel"""
+        if bg_color is None:
+            bg_color = colors.DARK_GRAY()
+
+        # Background
+        pygame.draw.rect(surface, bg_color, (x, y, width, height))
+
+        # Filled portion with horizontal dashes
+        fill_width = int((percent / 100) * width)
+        if fill_width > 0:
+            dash_height = 2
+            gap = 3
+            for dy in range(0, height, dash_height + gap):
+                if dy + dash_height <= height:
+                    pygame.draw.rect(surface, color, (x, y + dy, fill_width, dash_height))
+
+    def draw_double_bar(
+        self,
+        surface: pygame.Surface,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        percent: float,
+        color: tuple[int, int, int],
+        bg_color: tuple[int, int, int] = None,
+    ) -> None:
+        """Draw a bar with outline style - cyberpunk tech feel"""
+        if bg_color is None:
+            bg_color = colors.DARK_GRAY()
+
+        # Background
+        pygame.draw.rect(surface, bg_color, (x, y, width, height))
+
+        # Filled portion - outline only
+        fill_width = int((percent / 100) * width)
+        if fill_width > 4:
+            pygame.draw.rect(surface, color, (x, y, fill_width, height), 2)
+            # Inner fill slightly dimmer
+            inner_color = (color[0] // 2, color[1] // 2, color[2] // 2)
+            pygame.draw.rect(surface, inner_color, (x + 3, y + 3, fill_width - 6, height - 6))
+
+    def draw_thick_bar(
+        self,
+        surface: pygame.Surface,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        percent: float,
+        color: tuple[int, int, int],
+        bg_color: tuple[int, int, int] = None,
+    ) -> None:
+        """Draw a solid thick bar - bold warm feel"""
+        if bg_color is None:
+            bg_color = colors.DARK_GRAY()
+
+        # Background
+        pygame.draw.rect(surface, bg_color, (x, y, width, height))
+
+        # Solid fill
+        fill_width = int((percent / 100) * width)
+        if fill_width > 0:
+            pygame.draw.rect(surface, color, (x, y, fill_width, height))
+            # Bright edge on top
+            bright = (min(255, color[0] + 50), min(255, color[1] + 50), min(255, color[2] + 50))
+            pygame.draw.line(surface, bright, (x, y), (x + fill_width, y), 2)
+
+    def draw_terminal_bar(
+        self,
+        surface: pygame.Surface,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        percent: float,
+        color: tuple[int, int, int],
+        bg_color: tuple[int, int, int] = None,
+    ) -> None:
+        """Draw a bar with scanline effect - matrix terminal feel"""
+        if bg_color is None:
+            bg_color = colors.DARK_GRAY()
+
+        # Background
+        pygame.draw.rect(surface, bg_color, (x, y, width, height))
+
+        # Filled portion
+        fill_width = int((percent / 100) * width)
+        if fill_width > 0:
+            pygame.draw.rect(surface, color, (x, y, fill_width, height))
+            # Scanlines over the fill
+            for sy in range(y, y + height, 2):
+                dark = (color[0] // 2, color[1] // 2, color[2] // 2)
+                pygame.draw.line(surface, dark, (x, sy), (x + fill_width, sy), 1)
+
+    def draw_inverted_bar(
+        self,
+        surface: pygame.Surface,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        percent: float,
+        color: tuple[int, int, int],
+        bg_color: tuple[int, int, int] = None,
+    ) -> None:
+        """Draw a hollow/inverted bar - ominous 666 feel"""
+        if bg_color is None:
+            bg_color = colors.DARK_GRAY()
+
+        # Background
+        pygame.draw.rect(surface, bg_color, (x, y, width, height))
+
+        # Filled portion - hollow with bright outline
+        fill_width = int((percent / 100) * width)
+        if fill_width > 0:
+            # Dark fill
+            dark = (color[0] // 4, color[1] // 4, color[2] // 4)
+            pygame.draw.rect(surface, dark, (x, y, fill_width, height))
+            # Bright outline
+            pygame.draw.rect(surface, color, (x, y, fill_width, height), 2)
 
     def draw_box(
         self,

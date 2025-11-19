@@ -6,10 +6,11 @@ import os
 class Theme:
     """Theme color definitions"""
 
-    def __init__(self, name: str, colors: dict, use_glow: bool = False) -> None:
+    # Available styles: pixel, glow, dashed, double, thick, terminal, inverted
+    def __init__(self, name: str, colors: dict, style: str = "pixel") -> None:
         self.name = name
         self.colors = colors
-        self.use_glow = use_glow  # Whether to use glow effects
+        self.style = style  # Visual style for borders and bars
 
     def __getattr__(self, name: str):
         if name in self.colors:
@@ -72,12 +73,12 @@ THEMES = {
     }),
 
     "neon": Theme("neon", {
-        # Basic colors
-        "BLACK": (0, 0, 0),
-        "WHITE": (255, 255, 255),
-        "GRAY": (100, 100, 100),
-        "DARK_GRAY": (40, 40, 40),
-        "DARKER_GRAY": (30, 30, 30),
+        # Vibrant neon with glow effects
+        "BLACK": (5, 0, 10),          # Deep purple-black
+        "WHITE": (255, 50, 255),      # Bright magenta text
+        "GRAY": (150, 50, 150),
+        "DARK_GRAY": (60, 20, 60),
+        "DARKER_GRAY": (40, 10, 40),
         # Theme colors - HOT PINK/MAGENTA dominant
         "PRIMARY": (255, 0, 255),     # Hot magenta
         "SECONDARY": (255, 100, 255), # Light magenta
@@ -95,102 +96,106 @@ THEMES = {
         "CYAN": (255, 100, 255),
         "MAGENTA": (255, 0, 255),
         "PURPLE": (200, 0, 255),
-    }),
+        # Glow colors
+        "GLOW_PRIMARY": (255, 100, 255),
+        "GLOW_SECONDARY": (255, 150, 255),
+    }, style="glow"),
 
     "ocean": Theme("ocean", {
-        # Pure blue/cyan only
+        # Pure blue/cyan with dashed wave feel
         # Bright: (0, 150, 255), Medium: (0, 100, 200), Dark: (0, 70, 150), Darker: (0, 40, 100)
 
         # Basic colors
-        "BLACK": (0, 0, 0),
-        "WHITE": (0, 150, 255),       # Bright blue for main text
-        "GRAY": (0, 70, 150),         # Dark blue for secondary
+        "BLACK": (0, 5, 15),          # Deep ocean black
+        "WHITE": (0, 180, 255),       # Bright blue for main text
+        "GRAY": (0, 80, 160),         # Dark blue for secondary
         "DARK_GRAY": (0, 40, 100),
-        "DARKER_GRAY": (0, 30, 80),
+        "DARKER_GRAY": (0, 25, 70),
         # Theme colors
-        "PRIMARY": (0, 150, 255),     # Bright blue
-        "SECONDARY": (0, 100, 200),   # Medium blue
-        "ACCENT": (0, 150, 255),
-        "SUCCESS": (0, 150, 255),
-        "WARNING": (0, 100, 200),
-        "ERROR": (0, 70, 150),
-        "INFO": (0, 100, 200),
+        "PRIMARY": (0, 180, 255),     # Bright blue
+        "SECONDARY": (0, 120, 220),   # Medium blue
+        "ACCENT": (0, 200, 255),      # Cyan accent
+        "SUCCESS": (0, 200, 255),
+        "WARNING": (0, 120, 220),
+        "ERROR": (0, 80, 160),
+        "INFO": (0, 140, 230),
         # Specific colors - all pure blue spectrum
-        "GREEN": (0, 150, 255),       # Bright
-        "DARK_GREEN": (0, 100, 200),  # Medium
-        "RED": (0, 70, 150),          # Dark
-        "ORANGE": (0, 100, 200),      # Medium
-        "YELLOW": (0, 150, 255),      # Bright
-        "CYAN": (0, 100, 200),        # Medium
-        "MAGENTA": (0, 100, 200),     # Medium
-        "PURPLE": (0, 70, 150),       # Dark
-    }),
+        "GREEN": (0, 180, 255),       # Bright
+        "DARK_GREEN": (0, 120, 220),  # Medium
+        "RED": (0, 80, 160),          # Dark
+        "ORANGE": (0, 120, 220),      # Medium
+        "YELLOW": (0, 180, 255),      # Bright
+        "CYAN": (0, 140, 230),        # Medium
+        "MAGENTA": (0, 120, 220),     # Medium
+        "PURPLE": (0, 80, 160),       # Dark
+    }, style="dashed"),
 
     "sunset": Theme("sunset", {
-        # Pure orange/amber only
+        # Warm sunset with thick bold borders
         # Bright: (255, 150, 0), Medium: (200, 100, 0), Dark: (150, 70, 0), Darker: (100, 50, 0)
 
         # Basic colors
-        "BLACK": (0, 0, 0),
-        "WHITE": (255, 150, 0),       # Bright orange for main text
-        "GRAY": (150, 70, 0),         # Dark orange for secondary
+        "BLACK": (10, 5, 0),          # Warm black
+        "WHITE": (255, 180, 50),      # Golden orange for main text
+        "GRAY": (160, 90, 20),        # Darker orange for secondary
         "DARK_GRAY": (100, 50, 0),
-        "DARKER_GRAY": (70, 35, 0),
+        "DARKER_GRAY": (60, 30, 0),
         # Theme colors
-        "PRIMARY": (255, 150, 0),     # Bright orange
-        "SECONDARY": (200, 100, 0),   # Medium orange
-        "ACCENT": (255, 150, 0),
-        "SUCCESS": (255, 150, 0),
-        "WARNING": (200, 100, 0),
-        "ERROR": (150, 70, 0),
-        "INFO": (200, 100, 0),
+        "PRIMARY": (255, 180, 50),    # Bright golden
+        "SECONDARY": (220, 120, 20),  # Medium orange
+        "ACCENT": (255, 200, 100),    # Light golden
+        "SUCCESS": (255, 200, 100),
+        "WARNING": (220, 120, 20),
+        "ERROR": (160, 90, 20),
+        "INFO": (240, 150, 30),
         # Specific colors - all pure orange spectrum
-        "GREEN": (255, 150, 0),       # Bright
-        "DARK_GREEN": (200, 100, 0),  # Medium
-        "RED": (150, 70, 0),          # Dark
-        "ORANGE": (200, 100, 0),      # Medium
-        "YELLOW": (255, 150, 0),      # Bright
-        "CYAN": (200, 100, 0),        # Medium
-        "MAGENTA": (200, 100, 0),     # Medium
-        "PURPLE": (150, 70, 0),       # Dark
-    }),
+        "GREEN": (255, 180, 50),      # Bright
+        "DARK_GREEN": (220, 120, 20), # Medium
+        "RED": (160, 90, 20),         # Dark
+        "ORANGE": (220, 120, 20),     # Medium
+        "YELLOW": (255, 200, 100),    # Bright
+        "CYAN": (240, 150, 30),       # Medium
+        "MAGENTA": (220, 120, 20),    # Medium
+        "PURPLE": (160, 90, 20),      # Dark
+    }, style="thick"),
 
     "matrix": Theme("matrix", {
-        # Pure green only - like 666 but green
-        # Bright: (0, 200, 0), Medium: (0, 150, 0), Dark: (0, 100, 0), Darker: (0, 60, 0)
+        # Digital rain with terminal aesthetic
+        # Bright: (0, 255, 0), Medium: (0, 180, 0), Dark: (0, 120, 0), Darker: (0, 60, 0)
 
         # Basic colors
-        "BLACK": (0, 0, 0),
-        "WHITE": (0, 200, 0),         # Bright green for main text
-        "GRAY": (0, 100, 0),          # Dark green for secondary
-        "DARK_GRAY": (0, 60, 0),
-        "DARKER_GRAY": (0, 40, 0),
+        "BLACK": (0, 5, 0),           # Very dark green-black
+        "WHITE": (0, 255, 70),        # Bright matrix green for main text
+        "GRAY": (0, 120, 30),         # Dark green for secondary
+        "DARK_GRAY": (0, 60, 15),
+        "DARKER_GRAY": (0, 35, 8),
         # Theme colors
-        "PRIMARY": (0, 200, 0),       # Bright green
-        "SECONDARY": (0, 150, 0),     # Medium green
-        "ACCENT": (0, 200, 0),
-        "SUCCESS": (0, 200, 0),
-        "WARNING": (0, 150, 0),
-        "ERROR": (0, 100, 0),
-        "INFO": (0, 150, 0),
+        "PRIMARY": (0, 255, 70),      # Bright matrix green
+        "SECONDARY": (0, 180, 50),    # Medium green
+        "ACCENT": (100, 255, 100),    # Light green accent
+        "SUCCESS": (100, 255, 100),
+        "WARNING": (0, 180, 50),
+        "ERROR": (0, 120, 30),
+        "INFO": (50, 220, 60),
         # Specific colors - all pure green spectrum
-        "GREEN": (0, 200, 0),         # Bright
-        "DARK_GREEN": (0, 150, 0),    # Medium
-        "RED": (0, 100, 0),           # Dark
-        "ORANGE": (0, 150, 0),        # Medium
-        "YELLOW": (0, 200, 0),        # Bright
-        "CYAN": (0, 150, 0),          # Medium
-        "MAGENTA": (0, 150, 0),       # Medium
-        "PURPLE": (0, 100, 0),        # Dark
-    }),
+        "GREEN": (0, 255, 70),        # Bright
+        "DARK_GREEN": (0, 180, 50),   # Medium
+        "RED": (0, 120, 30),          # Dark
+        "ORANGE": (0, 180, 50),       # Medium
+        "YELLOW": (100, 255, 100),    # Bright
+        "CYAN": (50, 220, 60),        # Medium
+        "MAGENTA": (0, 180, 50),      # Medium
+        "PURPLE": (0, 120, 30),       # Dark
+    }, style="terminal"),
 
     "cyberpunk": Theme("cyberpunk", {
+        # High contrast with double-line tech borders
         # Basic colors
-        "BLACK": (0, 0, 0),
+        "BLACK": (5, 0, 10),          # Deep purple-black
         "WHITE": (255, 255, 255),
-        "GRAY": (100, 100, 100),
-        "DARK_GRAY": (40, 40, 40),
-        "DARKER_GRAY": (30, 30, 30),
+        "GRAY": (100, 80, 120),
+        "DARK_GRAY": (40, 30, 50),
+        "DARKER_GRAY": (25, 20, 35),
         # Theme colors - cyberpunk pink/cyan
         "PRIMARY": (255, 0, 150),     # Hot pink
         "SECONDARY": (0, 255, 255),   # Cyan
@@ -208,36 +213,36 @@ THEMES = {
         "CYAN": (0, 255, 255),
         "MAGENTA": (255, 0, 150),
         "PURPLE": (150, 0, 255),
-    }),
+    }, style="double"),
 
     "666": Theme("666", {
-        # 4 shades of pure red only - no pink/magenta
-        # Bright: (200, 0, 0), Medium: (150, 0, 0), Dark: (100, 0, 0), Darker: (60, 0, 0)
+        # Ominous hellfire with inverted/inset borders
+        # Bright: (220, 0, 0), Medium: (160, 0, 0), Dark: (100, 0, 0), Darker: (60, 0, 0)
 
         # Basic colors
-        "BLACK": (0, 0, 0),
-        "WHITE": (200, 0, 0),         # Bright red for main text
+        "BLACK": (10, 0, 0),          # Deep blood red black
+        "WHITE": (220, 0, 0),         # Bright red for main text
         "GRAY": (100, 0, 0),          # Dark red for secondary
         "DARK_GRAY": (60, 0, 0),
-        "DARKER_GRAY": (40, 0, 0),
+        "DARKER_GRAY": (35, 0, 0),
         # Theme colors
-        "PRIMARY": (200, 0, 0),       # Bright red
-        "SECONDARY": (150, 0, 0),     # Medium red
-        "ACCENT": (200, 0, 0),
-        "SUCCESS": (200, 0, 0),
-        "WARNING": (150, 0, 0),
+        "PRIMARY": (220, 0, 0),       # Bright red
+        "SECONDARY": (160, 0, 0),     # Medium red
+        "ACCENT": (255, 0, 0),        # Pure bright red accent
+        "SUCCESS": (255, 0, 0),
+        "WARNING": (160, 0, 0),
         "ERROR": (100, 0, 0),
-        "INFO": (150, 0, 0),
+        "INFO": (180, 0, 0),
         # Specific colors - all pure red spectrum
-        "GREEN": (200, 0, 0),         # Bright
-        "DARK_GREEN": (150, 0, 0),    # Medium
+        "GREEN": (220, 0, 0),         # Bright
+        "DARK_GREEN": (160, 0, 0),    # Medium
         "RED": (100, 0, 0),           # Dark
-        "ORANGE": (150, 0, 0),        # Medium
-        "YELLOW": (200, 0, 0),        # Bright
-        "CYAN": (150, 0, 0),          # Medium
-        "MAGENTA": (150, 0, 0),       # Medium
+        "ORANGE": (160, 0, 0),        # Medium
+        "YELLOW": (255, 0, 0),        # Bright
+        "CYAN": (180, 0, 0),          # Medium
+        "MAGENTA": (160, 0, 0),       # Medium
         "PURPLE": (100, 0, 0),        # Dark
-    }),
+    }, style="inverted"),
 
     "arcade": Theme("arcade", {
         # Retrowave/arcade style with glows
@@ -269,7 +274,7 @@ THEMES = {
         # Glow colors (for arcade effects)
         "GLOW_PRIMARY": (200, 100, 255),   # Light purple glow
         "GLOW_SECONDARY": (255, 150, 220), # Light pink glow
-    }, use_glow=True),
+    }, style="glow"),
 }
 
 

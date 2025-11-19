@@ -13,7 +13,7 @@ def _init_colors():
     theme = get_theme()
     _colors = theme.colors.copy()
     _colors["_theme_name"] = theme.name
-    _colors["_use_glow"] = theme.use_glow
+    _colors["_style"] = theme.style
 
 
 def reload_theme(name: str = None) -> None:
@@ -24,7 +24,7 @@ def reload_theme(name: str = None) -> None:
     theme = get_theme(name)
     _colors = theme.colors.copy()
     _colors["_theme_name"] = theme.name
-    _colors["_use_glow"] = theme.use_glow
+    _colors["_style"] = theme.style
 
 
 def get_current_theme_name() -> str:
@@ -32,9 +32,9 @@ def get_current_theme_name() -> str:
     return _colors.get("_theme_name", "default")
 
 
-def use_glow() -> bool:
-    """Check if current theme uses glow effects"""
-    return _colors.get("_use_glow", False)
+def get_style() -> str:
+    """Get the visual style of the current theme"""
+    return _colors.get("_style", "pixel")
 
 
 def GLOW_PRIMARY():

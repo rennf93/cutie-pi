@@ -9,7 +9,7 @@ from ui.components import UIComponents
 
 def _get_radius():
     """Get border radius based on theme"""
-    return 4 if colors.use_glow() else 0
+    return 4 if colors.get_style() == "glow" else 0
 
 
 class BlockedScreen(BaseScreen):

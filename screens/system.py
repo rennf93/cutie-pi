@@ -11,24 +11,46 @@ from utils.system_info import SystemInfo
 
 
 def _draw_border(ui, surface, rect, color):
-    """Draw border - glow or pixel based on theme"""
-    if colors.use_glow():
+    """Draw border based on theme style"""
+    style = colors.get_style()
+    if style == "glow":
         glow_color = colors.GLOW_PRIMARY()
         ui.draw_glow_border(surface, rect, color, glow_color)
-    else:
+    elif style == "dashed":
+        ui.draw_dashed_border(surface, rect, color)
+    elif style == "double":
+        ui.draw_double_border(surface, rect, color)
+    elif style == "thick":
+        ui.draw_thick_border(surface, rect, color)
+    elif style == "terminal":
+        ui.draw_terminal_border(surface, rect, color)
+    elif style == "inverted":
+        ui.draw_inverted_border(surface, rect, color)
+    else:  # pixel (default)
         ui.draw_pixel_border(surface, rect, color)
 
 
 def _draw_bar(ui, surface, x, y, width, height, percent, color):
-    """Draw bar - gradient or chunky based on theme"""
-    if colors.use_glow():
+    """Draw bar based on theme style"""
+    style = colors.get_style()
+    if style == "glow":
         end_color = (
             min(255, color[0] + 50),
             min(255, color[1] + 50),
             min(255, color[2] + 50)
         )
         ui.draw_gradient_bar(surface, x, y, width, height, percent, color, end_color)
-    else:
+    elif style == "dashed":
+        ui.draw_dashed_bar(surface, x, y, width, height, percent, color)
+    elif style == "double":
+        ui.draw_double_bar(surface, x, y, width, height, percent, color)
+    elif style == "thick":
+        ui.draw_thick_bar(surface, x, y, width, height, percent, color)
+    elif style == "terminal":
+        ui.draw_terminal_bar(surface, x, y, width, height, percent, color)
+    elif style == "inverted":
+        ui.draw_inverted_bar(surface, x, y, width, height, percent, color)
+    else:  # pixel (default)
         ui.draw_chunky_bar(surface, x, y, width, height, percent, color)
 
 

@@ -9,7 +9,7 @@ from ui.components import UIComponents
 
 def _get_bar_radius():
     """Get border radius for bars based on theme"""
-    return 2 if colors.use_glow() else 0
+    return 2 if colors.get_style() == "glow" else 0
 
 
 class GraphScreen(BaseScreen):
@@ -49,7 +49,7 @@ class GraphScreen(BaseScreen):
         graph_height = 230
 
         # Draw graph background
-        radius = 8 if colors.use_glow() else 0
+        radius = 8 if colors.get_style() == "glow" else 0
         pygame.draw.rect(surface, colors.DARK_GRAY(), (graph_x, graph_y, graph_width, graph_height), border_radius=radius)
 
         # Find max value for scaling
