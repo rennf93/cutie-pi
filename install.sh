@@ -3,6 +3,9 @@
 # Cutie-Pi Dashboard Installer
 # A pixel-art Pi-hole dashboard for small LCD screens
 #
+# One-liner install:
+#   curl -sSL https://raw.githubusercontent.com/rennf93/cutie-pi/v1.0.0/install.sh | sudo bash
+#
 
 set -e
 
@@ -13,10 +16,15 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# GitHub repo info
+GITHUB_REPO="rennf93/cutie-pi"
+GITHUB_BRANCH="v1.0.0"  # Use tagged release, not master
+
 # Default values
 INSTALL_DIR="/opt/cutie-pi"
 CONFIG_FILE="/etc/cutie-pi/config"
 SERVICE_FILE="/etc/systemd/system/cutie-pi.service"
+TMP_DIR="/tmp/cutie-pi-install"
 
 # Configuration defaults
 DEFAULT_PIHOLE_API="http://localhost/api"
@@ -56,7 +64,7 @@ print_usage() {
     echo "  --help                       Show this help message"
     echo ""
     echo "One-liner install from GitHub:"
-    echo "  curl -sSL https://raw.githubusercontent.com/yourusername/cutie-pi/main/install.sh | sudo bash"
+    echo "  curl -sSL https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/install.sh | sudo bash"
     echo ""
     echo "Available themes:"
     echo "  default    - Classic Pi-hole green"
@@ -110,21 +118,46 @@ install_application() {
     # Create installation directory
     mkdir -p "$INSTALL_DIR"
 
-    # Copy application files
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # Check if we're running from local source or need to download
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" || SCRIPT_DIR=""
 
-    # Copy Python files
-    for file in "$SCRIPT_DIR"/*.py; do
-        [[ -f "$file" ]] && cp "$file" "$INSTALL_DIR/"
-    done
+    if [[ -n "$SCRIPT_DIR" && -f "$SCRIPT_DIR/main.py" ]]; then
+        # Local install - copy from source directory
+        echo "Installing from local source..."
 
-    # Copy directories
-    for dir in api screens ui utils; do
-        if [[ -d "$SCRIPT_DIR/$dir" ]]; then
+        # Copy Python files
+        for file in "$SCRIPT_DIR"/*.py; do
+            [[ -f "$file" ]] && cp "$file" "$INSTALL_DIR/"
+        done
+
+        # Copy directories
+        for dir in api screens ui utils; do
+            if [[ -d "$SCRIPT_DIR/$dir" ]]; then
+                rm -rf "$INSTALL_DIR/$dir"
+                cp -r "$SCRIPT_DIR/$dir" "$INSTALL_DIR/"
+            fi
+        done
+    else
+        # Remote install - download from GitHub
+        echo "Downloading from GitHub..."
+
+        # Clean up any previous download
+        rm -rf "$TMP_DIR"
+        mkdir -p "$TMP_DIR"
+
+        # Download the repository
+        curl -sL "https://github.com/${GITHUB_REPO}/archive/${GITHUB_BRANCH}.tar.gz" | tar -xz -C "$TMP_DIR" --strip-components=1
+
+        # Copy files to install directory
+        cp "$TMP_DIR"/*.py "$INSTALL_DIR/"
+        for dir in api screens ui utils; do
             rm -rf "$INSTALL_DIR/$dir"
-            cp -r "$SCRIPT_DIR/$dir" "$INSTALL_DIR/"
-        fi
-    done
+            cp -r "$TMP_DIR/$dir" "$INSTALL_DIR/"
+        done
+
+        # Clean up
+        rm -rf "$TMP_DIR"
+    fi
 
     # Set permissions
     chmod -R 755 "$INSTALL_DIR"
