@@ -351,7 +351,7 @@ class Dashboard:
             fps = self.clock.get_fps()
             fps_text = self.font.tiny.render(f"FPS:{fps:.0f}", True, colors.GRAY())
             surface_width = self.screen.get_width()
-            self.screen.blit(fps_text, (surface_width - fps_text.get_width() - 5, 5))
+            self.screen.blit(fps_text, ((surface_width - fps_text.get_width()) // 2, 5))
 
         pygame.display.flip()
 

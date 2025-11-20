@@ -210,9 +210,10 @@ class SettingsScreen(BaseScreen):
                 text_x = 290 + (140 - value_text.get_width()) // 2
                 surface.blit(value_text, (text_x, y + 12))
             else:
-                # Toggle - just show value on right
+                # Toggle - center value like other settings
                 value_text = self.font.small.render(value, True, colors.WHITE())
-                surface.blit(value_text, (420 - value_text.get_width(), y + 12))
+                text_x = 290 + (140 - value_text.get_width()) // 2
+                surface.blit(value_text, (text_x, y + 12))
 
             y += row_height + 2
 
