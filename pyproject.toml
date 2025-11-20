@@ -1,0 +1,76 @@
+[project]
+name = "cutie-pi"
+version = "1.0.0"
+description = "A cute Pi-hole dashboard for Raspberry Pi with touchscreen"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+
+[tool.ruff]
+target-version = "py310"
+exclude = ["vulture_whitelist.py", ".venv"]
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # isort
+    "I",
+]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+exclude = ["vulture_whitelist.py", ".venv"]
+
+[tool.vulture]
+paths = [".", "vulture_whitelist.py"]
+exclude = [".venv", "*.pyc", "__pycache__"]
+min_confidence = 100
+ignore_decorators = [
+    "@pytest.fixture",
+    "@pytest.mark.*",
+]
+ignore_names = [
+    "test_*",
+    "Test*",
+    "__*__",
+]
+sort_by_size = true
+
+[tool.bandit]
+skips = ["B101", "B601"]
+exclude_dirs = [".venv", "vulture_whitelist.py"]
+severity = "medium"
+
+[tool.radon]
+exclude = ".venv/*,vulture_whitelist.py"
+cc_min = "C"
+mi_min = "A"
+no_assert = false
+show_closures = true
+total_average = true
+
+[tool.xenon]
+max_absolute = "B"
+max_modules = "A"
+max_average = "A"
+exclude = [".venv/*", "vulture_whitelist.py"]
+ignore = []

@@ -1,13 +1,15 @@
 """Query graph screen"""
 
 import pygame
-from .base import BaseScreen
+
 from ui import colors
-from ui.fonts import PixelFont
 from ui.components import UIComponents
+from ui.fonts import PixelFont
+
+from .base import BaseScreen
 
 
-def _get_bar_radius():
+def _get_bar_radius() -> int:
     """Get border radius for bars based on theme"""
     return 2 if colors.get_style() == "glow" else 0
 

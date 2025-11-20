@@ -1,6 +1,7 @@
 """Pixel art font management"""
 
 import os
+
 import pygame
 
 from utils.logger import logger

@@ -1,40 +1,42 @@
 #!/usr/bin/env python3
 """Pi-hole Dashboard - Main entry point"""
 
+import contextlib
 import os
-import time
 import subprocess
+import time
+
 import pygame
 
+from api.pihole import PiholeAPI
 from config import (
-    SCREEN_WIDTH,
-    SCREEN_HEIGHT,
-    FPS,
     API_UPDATE_INTERVAL,
-    SWIPE_THRESHOLD,
-    TOTAL_SCREENS,
-    SCREEN_STATS,
-    SCREEN_GRAPH,
+    FPS,
     SCREEN_BLOCKED,
     SCREEN_CLIENTS,
-    SCREEN_SYSTEM,
+    SCREEN_GRAPH,
+    SCREEN_HEIGHT,
     SCREEN_SETTINGS,
+    SCREEN_STATS,
+    SCREEN_SYSTEM,
+    SCREEN_WIDTH,
+    SWIPE_THRESHOLD,
     THEME,
+    TOTAL_SCREENS,
 )
-from ui.fonts import PixelFont
-from ui.components import UIComponents
-from ui import colors
-from ui.colors import reload_theme
-from utils.logger import logger
-from api.pihole import PiholeAPI
 from screens import (
-    StatsScreen,
-    GraphScreen,
     BlockedScreen,
     ClientsScreen,
-    SystemScreen,
+    GraphScreen,
     SettingsScreen,
+    StatsScreen,
+    SystemScreen,
 )
+from ui import colors
+from ui.colors import reload_theme
+from ui.components import UIComponents
+from ui.fonts import PixelFont
+from utils.logger import logger
 
 
 class Dashboard:
@@ -103,54 +105,60 @@ class Dashboard:
         except Exception:
             return "N/A"
 
+    def _handle_keydown(self, event: pygame.event.Event) -> None:
+        """Handle keyboard events"""
+        self.last_activity = time.time()
+        if self.display_asleep:
+            self._wake_display()
+            return
+        if event.key == pygame.K_ESCAPE:
+            self.running = False
+        elif event.key == pygame.K_LEFT:
+            self.current_screen = (self.current_screen - 1) % TOTAL_SCREENS
+        elif event.key == pygame.K_RIGHT:
+            self.current_screen = (self.current_screen + 1) % TOTAL_SCREENS
+
+    def _handle_mouse_down(self, event: pygame.event.Event) -> None:
+        """Handle mouse/touch down events"""
+        self.last_activity = time.time()
+        if self.display_asleep:
+            self._wake_display()
+            self.is_touching = False
+            return
+        self.touch_start_x, self.touch_start_y = event.pos
+        self.is_touching = True
+
+    def _handle_mouse_up(self, event: pygame.event.Event) -> None:
+        """Handle mouse/touch up events"""
+        if not self.is_touching:
+            return
+
+        end_x, end_y = event.pos
+        diff_x = end_x - self.touch_start_x
+
+        # Check for tap (not swipe) on settings screen
+        if abs(diff_x) < SWIPE_THRESHOLD and self.current_screen == SCREEN_SETTINGS:
+            action = self.screens[SCREEN_SETTINGS].handle_tap((end_x, end_y))
+            if action:
+                self._handle_settings_action(action)
+        elif diff_x < -SWIPE_THRESHOLD:
+            self.current_screen = (self.current_screen + 1) % TOTAL_SCREENS
+        elif diff_x > SWIPE_THRESHOLD:
+            self.current_screen = (self.current_screen - 1) % TOTAL_SCREENS
+
+        self.is_touching = False
+
     def handle_events(self) -> None:
         """Handle pygame events"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
-                self.last_activity = time.time()
-                if self.display_asleep:
-                    self._wake_display()
-                    continue
-                if event.key == pygame.K_ESCAPE:
-                    self.running = False
-                elif event.key == pygame.K_LEFT:
-                    self.current_screen = (self.current_screen - 1) % TOTAL_SCREENS
-                elif event.key == pygame.K_RIGHT:
-                    self.current_screen = (self.current_screen + 1) % TOTAL_SCREENS
+                self._handle_keydown(event)
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                self.last_activity = time.time()
-                # If display is asleep, wake it and ignore this touch
-                if self.display_asleep:
-                    self._wake_display()
-                    self.is_touching = False
-                    continue
-                self.touch_start_x, self.touch_start_y = event.pos
-                self.is_touching = True
+                self._handle_mouse_down(event)
             elif event.type == pygame.MOUSEBUTTONUP:
-                if self.is_touching:
-                    end_x, end_y = event.pos
-                    diff_x = end_x - self.touch_start_x
-
-                    # Check for tap (not swipe) on settings screen
-                    if (
-                        abs(diff_x) < SWIPE_THRESHOLD
-                        and self.current_screen == SCREEN_SETTINGS
-                    ):
-                        action = self.screens[SCREEN_SETTINGS].handle_tap(
-                            (end_x, end_y)
-                        )
-                        if action:
-                            self._handle_settings_action(action)
-                    elif diff_x < -SWIPE_THRESHOLD:
-                        # Swipe left - next screen
-                        self.current_screen = (self.current_screen + 1) % TOTAL_SCREENS
-                    elif diff_x > SWIPE_THRESHOLD:
-                        # Swipe right - previous screen
-                        self.current_screen = (self.current_screen - 1) % TOTAL_SCREENS
-
-                    self.is_touching = False
+                self._handle_mouse_up(event)
 
     def _handle_settings_action(self, action: dict) -> None:
         """Handle settings changes"""
@@ -188,7 +196,7 @@ class Dashboard:
             try:
                 # Read max brightness
                 max_path = path.replace("brightness", "max_brightness")
-                with open(max_path, "r") as f:
+                with open(max_path) as f:
                     max_brightness = int(f.read().strip())
 
                 # Calculate actual value
@@ -198,7 +206,7 @@ class Dashboard:
                     f.write(str(actual))
                 logger.info(f"Brightness set to {value}%")
                 return
-            except (FileNotFoundError, PermissionError, IOError):
+            except OSError:
                 continue
 
         logger.error("Could not set brightness - no backlight found")
@@ -213,7 +221,7 @@ class Dashboard:
         env["DISPLAY"] = ":0"
 
         # Try multiple methods to turn off display
-        try:
+        with contextlib.suppress(subprocess.CalledProcessError):
             # Method 1: DPMS via xset
             subprocess.run(
                 ["xset", "dpms", "force", "off"],
@@ -221,8 +229,6 @@ class Dashboard:
                 capture_output=True,
                 timeout=2,
             )
-        except Exception:
-            pass
 
         try:
             # Method 2: Backlight power control
@@ -253,13 +259,11 @@ class Dashboard:
         env["DISPLAY"] = ":0"
 
         # Try multiple methods to turn on display
-        try:
-            # Method 1: DPMS via xset
+        # Method 1: DPMS via xset
+        with contextlib.suppress(subprocess.CalledProcessError):
             subprocess.run(
                 ["xset", "dpms", "force", "on"], env=env, capture_output=True, timeout=2
             )
-        except Exception:
-            pass
 
         try:
             # Method 2: Backlight power control

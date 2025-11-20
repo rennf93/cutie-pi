@@ -48,7 +48,7 @@ class SystemInfo:
     def _fetch_cpu(self) -> None:
         """Fetch CPU usage from /proc/stat"""
         try:
-            with open("/proc/stat", "r") as f:
+            with open("/proc/stat") as f:
                 cpu_line = f.readline()
                 cpu_times = list(map(int, cpu_line.split()[1:]))
                 idle = cpu_times[3]
@@ -65,7 +65,7 @@ class SystemInfo:
     def _fetch_memory(self) -> None:
         """Fetch memory usage from /proc/meminfo"""
         try:
-            with open("/proc/meminfo", "r") as f:
+            with open("/proc/meminfo") as f:
                 meminfo: dict[str, int] = {}
                 for line in f:
                     parts = line.split()
@@ -105,7 +105,7 @@ class SystemInfo:
     def _fetch_temperature(self) -> None:
         """Fetch CPU temperature"""
         try:
-            with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
+            with open("/sys/class/thermal/thermal_zone0/temp") as f:
                 self.temp = int(f.read().strip()) / 1000
         except Exception as e:
             logger.error(f"Error getting temperature: {e}")
@@ -114,7 +114,7 @@ class SystemInfo:
     def _fetch_uptime(self) -> None:
         """Fetch system uptime"""
         try:
-            with open("/proc/uptime", "r") as f:
+            with open("/proc/uptime") as f:
                 uptime_secs = float(f.read().split()[0])
                 days = int(uptime_secs // 86400)
                 hours = int((uptime_secs % 86400) // 3600)
@@ -144,7 +144,7 @@ class SystemInfo:
             self.ip_address = "N/A"
 
         try:
-            with open("/etc/hostname", "r") as f:
+            with open("/etc/hostname") as f:
                 self.hostname = f.read().strip()
         except Exception as e:
             logger.error(f"Error getting hostname: {e}")
@@ -160,7 +160,7 @@ class SystemInfo:
 
         for fan_path in fan_rpm_paths:
             try:
-                with open(fan_path, "r") as f:
+                with open(fan_path) as f:
                     self.fan_rpm = int(f.read().strip())
                     # Convert RPM to percentage (max ~10000 RPM for Pi 5 fan)
                     self.fan_speed = min(255, int((self.fan_rpm / 10000) * 255))

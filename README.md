@@ -17,7 +17,7 @@ A pixel-art dashboard for Pi-hole on small LCD screens. Inspired by Flipper Zero
 
 - Raspberry Pi with LCD screen (tested on 3.5" 480x320)
 - Pi-hole v6
-- Python 3.9+
+- Python 3.10+
 
 ## Installation
 

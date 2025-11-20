@@ -14,9 +14,10 @@ class Theme:
         self.colors = colors
         self.style = style  # Visual style for borders and bars
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> tuple[int, int, int]:
         if name in self.colors:
-            return self.colors[name]
+            color: tuple[int, int, int] = self.colors[name]
+            return color
         raise AttributeError(f"Theme has no color '{name}'")
 
 
@@ -114,7 +115,10 @@ THEMES = {
         "ocean",
         {
             # Pure blue/cyan with dashed wave feel
-            # Bright: (0, 150, 255), Medium: (0, 100, 200), Dark: (0, 70, 150), Darker: (0, 40, 100)
+            #   Bright: (0, 150, 255)
+            #   Medium: (0, 100, 200)
+            #   Dark: (0, 70, 150)
+            #   Darker: (0, 40, 100)
             # Basic colors
             "BLACK": (0, 5, 15),  # Deep ocean black
             "WHITE": (0, 180, 255),  # Bright blue for main text
@@ -145,7 +149,10 @@ THEMES = {
         "sunset",
         {
             # Warm sunset with thick bold borders
-            # Bright: (255, 150, 0), Medium: (200, 100, 0), Dark: (150, 70, 0), Darker: (100, 50, 0)
+            #   Bright: (255, 150, 0)
+            #   Medium: (200, 100, 0)
+            #   Dark: (150, 70, 0)
+            #   Darker: (100, 50, 0)
             # Basic colors
             "BLACK": (10, 5, 0),  # Warm black
             "WHITE": (255, 180, 50),  # Golden orange for main text
@@ -176,7 +183,10 @@ THEMES = {
         "matrix",
         {
             # Digital rain with terminal aesthetic
-            # Bright: (0, 255, 0), Medium: (0, 180, 0), Dark: (0, 120, 0), Darker: (0, 60, 0)
+            #   Bright: (0, 255, 0)
+            #   Medium: (0, 180, 0)
+            #   Dark: (0, 120, 0)
+            #   Darker: (0, 60, 0)
             # Basic colors
             "BLACK": (0, 5, 0),  # Very dark green-black
             "WHITE": (0, 255, 70),  # Bright matrix green for main text
@@ -237,7 +247,10 @@ THEMES = {
         "666",
         {
             # Ominous hellfire with inverted/inset borders
-            # Bright: (220, 0, 0), Medium: (160, 0, 0), Dark: (100, 0, 0), Darker: (60, 0, 0)
+            #   Bright: (220, 0, 0),
+            #   Medium: (160, 0, 0),
+            #   Dark: (100, 0, 0),
+            #   Darker: (60, 0, 0)
             # Basic colors
             "BLACK": (10, 0, 0),  # Deep blood red black
             "WHITE": (220, 0, 0),  # Bright red for main text

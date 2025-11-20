@@ -1,6 +1,7 @@
 """Reusable UI components for the dashboard"""
 
 import pygame
+
 from . import colors
 from .fonts import PixelFont
 

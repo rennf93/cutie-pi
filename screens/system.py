@@ -2,15 +2,23 @@
 
 import shutil
 from datetime import datetime
+
 import pygame
-from .base import BaseScreen
+
 from ui import colors
-from ui.fonts import PixelFont
 from ui.components import UIComponents
+from ui.fonts import PixelFont
 from utils.system_info import SystemInfo
 
+from .base import BaseScreen
 
-def _draw_border(ui, surface, rect, color):
+
+def _draw_border(
+    ui: UIComponents,
+    surface: pygame.Surface,
+    rect: pygame.Rect,
+    color: tuple[int, int, int],
+) -> None:
     """Draw border based on theme style"""
     style = colors.get_style()
     if style == "glow":
@@ -30,7 +38,16 @@ def _draw_border(ui, surface, rect, color):
         ui.draw_pixel_border(surface, rect, color)
 
 
-def _draw_bar(ui, surface, x, y, width, height, percent, color):
+def _draw_bar(
+    ui: UIComponents,
+    surface: pygame.Surface,
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    percent: float,
+    color: tuple[int, int, int],
+) -> None:
     """Draw bar based on theme style"""
     style = colors.get_style()
     if style == "glow":
@@ -65,36 +82,41 @@ class SystemScreen(BaseScreen):
         """Update system information"""
         self.system_info.update()
 
-    def draw(self, surface: pygame.Surface) -> None:
-        """Draw the system screen"""
-        surface.fill(colors.BLACK())
-        info = self.system_info
+    def _get_threshold_color(
+        self, value: float, thresholds: tuple[float, float]
+    ) -> tuple[int, int, int]:
+        """Get color based on value thresholds (low, high)"""
+        low, high = thresholds
+        green: tuple[int, int, int] = colors.GREEN()
+        orange: tuple[int, int, int] = colors.ORANGE()
+        red: tuple[int, int, int] = colors.RED()
+        if value < low:
+            return green
+        elif value < high:
+            return orange
+        return red
 
-        # Title with hostname
+    def _draw_header(self, surface: pygame.Surface) -> None:
+        """Draw hostname, IP, date and time"""
+        info = self.system_info
         title = self.font.medium.render(info.hostname.upper(), True, colors.CYAN())
         surface.blit(title, (10, 10))
 
-        # IP address below hostname
         ip_text = self.font.tiny.render(info.ip_address, True, colors.GRAY())
         surface.blit(ip_text, (10, 30))
 
-        # Date and time (right side)
         now = datetime.now()
-        time_str = now.strftime("%H:%M")
-        date_str = now.strftime("%a %d %b")
-
-        time_text = self.font.large.render(time_str, True, colors.WHITE())
+        time_text = self.font.large.render(now.strftime("%H:%M"), True, colors.WHITE())
         surface.blit(time_text, (380, 10))
-        date_text = self.font.tiny.render(date_str, True, colors.GRAY())
+        date_text = self.font.tiny.render(now.strftime("%a %d %b"), True, colors.GRAY())
         surface.blit(date_text, (380, 32))
 
-        y = 55
-
-        # Disk usage - full width bar at top
+    def _draw_disk_bar(self, surface: pygame.Surface, y: int) -> None:
+        """Draw disk usage bar"""
         text = self.font.small.render("DISK", True, colors.GRAY())
         surface.blit(text, (15, y + 5))
         try:
-            total, used, free = shutil.disk_usage("/")
+            total, used, _ = shutil.disk_usage("/")
             disk_percent = (used / total) * 100
             disk_text = f"{used // (1024**3)}G/{total // (1024**3)}G"
         except Exception:
@@ -104,19 +126,16 @@ class SystemScreen(BaseScreen):
         disk_info = self.font.small.render(disk_text, True, colors.WHITE())
         surface.blit(disk_info, (405, y + 5))
 
+    def _draw_info_boxes(self, surface: pygame.Surface) -> None:
+        """Draw temp, memory, uptime and fan boxes"""
+        info = self.system_info
         y = 95
 
         # Temperature box
         _draw_border(self.ui, surface, pygame.Rect(15, y, 220, 50), colors.ORANGE())
         text = self.font.small.render("TEMP", True, colors.ORANGE())
         surface.blit(text, (25, y + 17))
-        temp_color = (
-            colors.GREEN()
-            if info.temp < 60
-            else colors.ORANGE()
-            if info.temp < 75
-            else colors.RED()
-        )
+        temp_color = self._get_threshold_color(info.temp, (60, 75))
         temp_text = self.font.large.render(f"{info.temp:.0f}C", True, temp_color)
         surface.blit(temp_text, (110, y + 14))
 
@@ -129,7 +148,6 @@ class SystemScreen(BaseScreen):
         )
         surface.blit(mem_text, (310, y + 14))
 
-        # Middle row - Uptime and Fan
         y = 160
 
         # Uptime box
@@ -146,50 +164,35 @@ class SystemScreen(BaseScreen):
         text = self.font.small.render("FAN", True, colors.YELLOW())
         surface.blit(text, (260, y + 17))
         fan_percent = int((info.fan_speed / 255) * 100)
-        fan_text = self.font.large.render(
-            f"{fan_percent}%",
-            True,
-            colors.WHITE() if fan_percent > 0 else colors.GRAY(),
-        )
+        fan_color = colors.WHITE() if fan_percent > 0 else colors.GRAY()
+        fan_text = self.font.large.render(f"{fan_percent}%", True, fan_color)
         surface.blit(fan_text, (340, y + 14))
 
-        # Bottom row - CPU and RAM tall bars with vertical labels
+    def _draw_resource_bars(self, surface: pygame.Surface) -> None:
+        """Draw CPU and RAM bars"""
+        info = self.system_info
         y = 225
         bar_height = 60
 
-        # CPU - vertical label close to bar
-        text = self.font.small.render("C", True, colors.GREEN())
-        surface.blit(text, (15, y + 8))
-        text = self.font.small.render("P", True, colors.GREEN())
-        surface.blit(text, (15, y + 23))
-        text = self.font.small.render("U", True, colors.GREEN())
-        surface.blit(text, (15, y + 38))
-        cpu_color = (
-            colors.GREEN()
-            if info.cpu_percent < 70
-            else colors.ORANGE()
-            if info.cpu_percent < 90
-            else colors.RED()
-        )
+        # CPU
+        for i, char in enumerate("CPU"):
+            text = self.font.small.render(char, True, colors.GREEN())
+            surface.blit(text, (15, y + 8 + i * 15))
+        cpu_color = self._get_threshold_color(info.cpu_percent, (70, 90))
         _draw_bar(self.ui, surface, 30, y, 200, bar_height, info.cpu_percent, cpu_color)
         percent_text = self.font.medium.render(
             f"{info.cpu_percent:.0f}%", True, colors.WHITE()
         )
         surface.blit(percent_text, (100, y + 22))
 
-        # RAM - vertical label close to bar
-        text = self.font.small.render("R", True, colors.PURPLE())
-        surface.blit(text, (250, y + 8))
-        text = self.font.small.render("A", True, colors.PURPLE())
-        surface.blit(text, (250, y + 23))
-        text = self.font.small.render("M", True, colors.PURPLE())
-        surface.blit(text, (250, y + 38))
+        # RAM
+        for i, char in enumerate("RAM"):
+            text = self.font.small.render(char, True, colors.PURPLE())
+            surface.blit(text, (250, y + 8 + i * 15))
         ram_color = (
             colors.PURPLE()
             if info.mem_percent < 70
-            else colors.ORANGE()
-            if info.mem_percent < 90
-            else colors.RED()
+            else self._get_threshold_color(info.mem_percent, (70, 90))
         )
         _draw_bar(
             self.ui, surface, 265, y, 200, bar_height, info.mem_percent, ram_color
@@ -198,3 +201,11 @@ class SystemScreen(BaseScreen):
             f"{info.mem_percent:.0f}%", True, colors.WHITE()
         )
         surface.blit(percent_text, (335, y + 22))
+
+    def draw(self, surface: pygame.Surface) -> None:
+        """Draw the system screen"""
+        surface.fill(colors.BLACK())
+        self._draw_header(surface)
+        self._draw_disk_bar(surface, 55)
+        self._draw_info_boxes(surface)
+        self._draw_resource_bars(surface)

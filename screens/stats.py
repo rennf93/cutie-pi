@@ -2,14 +2,22 @@
 
 import math
 import subprocess
+
 import pygame
-from .base import BaseScreen
+
 from ui import colors
-from ui.fonts import PixelFont
 from ui.components import UIComponents
+from ui.fonts import PixelFont
+
+from .base import BaseScreen
 
 
-def _draw_border(ui, surface, rect, color):
+def _draw_border(
+    ui: UIComponents,
+    surface: pygame.Surface,
+    rect: pygame.Rect,
+    color: tuple[int, int, int],
+) -> None:
     """Draw border based on theme style"""
     style = colors.get_style()
     if style == "glow":
@@ -29,7 +37,16 @@ def _draw_border(ui, surface, rect, color):
         ui.draw_pixel_border(surface, rect, color)
 
 
-def _draw_bar(ui, surface, x, y, width, height, percent, color):
+def _draw_bar(
+    ui: UIComponents,
+    surface: pygame.Surface,
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    percent: float,
+    color: tuple[int, int, int],
+) -> None:
     """Draw bar based on theme style"""
     style = colors.get_style()
     if style == "glow":

@@ -1,6 +1,7 @@
 """Pi-hole API client for v6"""
 
 import requests
+
 from config import PIHOLE_API, PIHOLE_PASSWORD
 from utils.logger import logger
 

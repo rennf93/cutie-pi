@@ -15,7 +15,7 @@ fix:
 vulture:
 	@echo "Finding dead code with Vulture..."
 	@echo ''
-	@vulture vulture_whitelist.py
+	@vulture . vulture_whitelist.py --exclude .venv --min-confidence 100
 	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Security scan with Bandit
@@ -23,7 +23,7 @@ vulture:
 bandit:
 	@echo "Running Bandit security scan..."
 	@echo ''
-	@bandit -r . -ll
+	@bandit -r . -ll --exclude "./.venv,./vulture_whitelist.py,./.claude" -s B101,B601
 	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Check dependencies with Safety
@@ -48,13 +48,13 @@ radon:
 	@echo "Analyzing code complexity with Radon..."
 	@echo ''
 	@echo "Cyclomatic Complexity:"
-	@radon cc . -nc
+	@radon cc . -nc --exclude ".venv/*,vulture_whitelist.py"
 	@echo ''
 	@echo "Maintainability Index:"
-	@radon mi . -nc
+	@radon mi . -nc --exclude ".venv/*,vulture_whitelist.py"
 	@echo ''
 	@echo "Raw Metrics:"
-	@radon raw .
+	@radon raw . --exclude ".venv/*,vulture_whitelist.py"
 	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Check complexity thresholds with Xenon
@@ -62,7 +62,7 @@ radon:
 xenon:
 	@echo "Checking complexity thresholds with Xenon..."
 	@echo ''
-	@xenon . --max-absolute B --max-modules A --max-average A
+	@xenon . --max-absolute B --max-modules A --max-average A --exclude ".venv/*,vulture_whitelist.py"
 	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Analyze dependencies with Deptry

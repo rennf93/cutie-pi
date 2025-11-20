@@ -1,13 +1,15 @@
 """Top clients screen"""
 
 import pygame
-from .base import BaseScreen
+
 from ui import colors
-from ui.fonts import PixelFont
 from ui.components import UIComponents
+from ui.fonts import PixelFont
+
+from .base import BaseScreen
 
 
-def _get_radius():
+def _get_radius() -> int:
     """Get border radius based on theme"""
     return 4 if colors.get_style() == "glow" else 0
 

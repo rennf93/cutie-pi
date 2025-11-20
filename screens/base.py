@@ -1,9 +1,11 @@
 """Base screen class for all dashboard screens"""
 
 from abc import ABC, abstractmethod
+
 import pygame
-from ui.fonts import PixelFont
+
 from ui.components import UIComponents
+from ui.fonts import PixelFont
 
 
 class BaseScreen(ABC):

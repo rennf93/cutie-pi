@@ -5,22 +5,21 @@ import os
 from __version__ import __version__
 
 
-def _get_int_env(
-    key: str, default: int, min_val: int | None = None, max_val: int | None = None
-) -> int:
+def _get_int_env(key: str, default: int, min_val: int = 0, max_val: int = 10000) -> int:
     """Get integer from environment with validation"""
     try:
         value = int(os.environ.get(key, str(default)))
-        if min_val is not None and value < min_val:
-            print(f"Warning: {key}={value} below minimum {min_val}, using {min_val}")
-            return min_val
-        if max_val is not None and value > max_val:
-            print(f"Warning: {key}={value} exceeds maximum {max_val}, using {max_val}")
-            return max_val
-        return value
     except ValueError:
         print(f"Warning: Invalid {key} value, using default {default}")
         return default
+
+    if value < min_val:
+        print(f"Warning: {key}={value} below minimum {min_val}, using {min_val}")
+        return min_val
+    if value > max_val:
+        print(f"Warning: {key}={value} exceeds maximum {max_val}, using {max_val}")
+        return max_val
+    return value
 
 
 # Version
