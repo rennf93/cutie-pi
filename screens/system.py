@@ -136,8 +136,12 @@ class SystemScreen(BaseScreen):
         text = self.font.small.render("TEMP", True, colors.ORANGE())
         surface.blit(text, (25, y + 17))
         temp_color = self._get_threshold_color(info.temp, (60, 75))
-        temp_text = self.font.large.render(f"{info.temp:.0f}C", True, temp_color)
-        surface.blit(temp_text, (110, y + 14))
+        fahr_temp = (info.temp * 9/5) + 32
+        temp_text = self.font.large.render(
+            f"{info.temp:.0f}°C/{fahr_temp:.0f}°F", True, temp_color
+        )
+        center_x = 80 + (140 - temp_text.get_width()) // 2
+        surface.blit(temp_text, (center_x, y + 14))
 
         # Memory box
         _draw_border(self.ui, surface, pygame.Rect(250, y, 220, 50), colors.CYAN())

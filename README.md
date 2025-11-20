@@ -1,6 +1,8 @@
 # Cutie-Pi
 
-A pixel-art dashboard for Pi-hole on small LCD screens. Inspired by Flipper Zero's retro aesthetic.
+A pixel-art dashboard for Pi-hole on small LCD screens. Inspired by retro aesthetic.
+
+![Pi-Hole Dashboard](./assets/images/pi-hole.png) ![System Info](./assets/images/system.png) ![Settings](./assets/images/settings.png)
 
 ## Features
 
