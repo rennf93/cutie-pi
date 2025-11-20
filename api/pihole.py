@@ -2,6 +2,7 @@
 
 import requests
 from config import PIHOLE_API, PIHOLE_PASSWORD
+from utils.logger import logger
 
 
 class PiholeAPI:
@@ -9,7 +10,7 @@ class PiholeAPI:
 
     def __init__(self) -> None:
         self.base_url = PIHOLE_API
-        self.session_id = None
+        self.session_id: str | None = None
         self._authenticate()
 
     def _authenticate(self) -> None:
@@ -26,7 +27,7 @@ class PiholeAPI:
                 data = response.json()
                 self.session_id = data.get("session", {}).get("sid")
         except Exception as e:
-            print(f"Auth error: {e}")
+            logger.error(f"Auth error: {e}")
 
     def _get(self, endpoint: str) -> dict:
         """Make authenticated GET request"""
@@ -42,7 +43,8 @@ class PiholeAPI:
             )
             if response.status_code == 401:
                 self._authenticate()
-                headers["sid"] = self.session_id
+                if self.session_id:
+                    headers["sid"] = self.session_id
                 response = requests.get(
                     f"{self.base_url}{endpoint}",
                     headers=headers,
@@ -50,7 +52,7 @@ class PiholeAPI:
                 )
             return response.json() if response.status_code == 200 else {}
         except Exception as e:
-            print(f"API error: {e}")
+            logger.error(f"API error: {e}")
             return {}
 
     def get_summary(self) -> dict:
@@ -63,7 +65,9 @@ class PiholeAPI:
             "ads_blocked_today": queries.get("blocked", 0),
             "ads_percentage_today": queries.get("percent_blocked", 0),
             "unique_clients": clients.get("active", 0),
-            "domains_being_blocked": data.get("gravity", {}).get("domains_being_blocked", 0),
+            "domains_being_blocked": data.get("gravity", {}).get(
+                "domains_being_blocked", 0
+            ),
             "status": "enabled" if data.get("blocking", True) else "disabled",
         }
 

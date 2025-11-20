@@ -1,3 +1,3 @@
 """API package"""
 
-from .pihole import PiholeAPI
+from .pihole import PiholeAPI as PiholeAPI

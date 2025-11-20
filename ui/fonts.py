@@ -3,6 +3,8 @@
 import os
 import pygame
 
+from utils.logger import logger
+
 
 class PixelFont:
     """Pixel art font renderer using Press Start 2P"""
@@ -19,13 +21,13 @@ class PixelFont:
                 self.small = pygame.font.Font(pixel_font, 8)
                 self.tiny = pygame.font.Font(pixel_font, 6)
             else:
-                print(f"Pixel font not found at {pixel_font}, using fallback")
+                logger.warning(f"Pixel font not found at {pixel_font}, using fallback")
                 self.large = pygame.font.Font(fallback, 18)
                 self.medium = pygame.font.Font(fallback, 14)
                 self.small = pygame.font.Font(fallback, 10)
                 self.tiny = pygame.font.Font(fallback, 8)
         except Exception as e:
-            print(f"Error loading fonts: {e}")
+            logger.error(f"Error loading fonts: {e}")
             self.large = pygame.font.SysFont("monospace", 18, bold=True)
             self.medium = pygame.font.SysFont("monospace", 14, bold=True)
             self.small = pygame.font.SysFont("monospace", 10, bold=True)

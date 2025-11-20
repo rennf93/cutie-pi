@@ -50,7 +50,12 @@ class GraphScreen(BaseScreen):
 
         # Draw graph background
         radius = 8 if colors.get_style() == "glow" else 0
-        pygame.draw.rect(surface, colors.DARK_GRAY(), (graph_x, graph_y, graph_width, graph_height), border_radius=radius)
+        pygame.draw.rect(
+            surface,
+            colors.DARK_GRAY(),
+            (graph_x, graph_y, graph_width, graph_height),
+            border_radius=radius,
+        )
 
         # Find max value for scaling
         max_val = max(max(t, b) for t, b in self.history) if self.history else 1
@@ -69,7 +74,12 @@ class GraphScreen(BaseScreen):
                 pygame.draw.rect(
                     surface,
                     colors.GREEN(),
-                    (x, graph_y + graph_height - total_height, bar_width - 1, total_height),
+                    (
+                        x,
+                        graph_y + graph_height - total_height,
+                        bar_width - 1,
+                        total_height,
+                    ),
                 )
 
             # Blocked queries bar (red, overlaid)
@@ -78,7 +88,12 @@ class GraphScreen(BaseScreen):
                 pygame.draw.rect(
                     surface,
                     colors.RED(),
-                    (x, graph_y + graph_height - blocked_height, bar_width - 1, blocked_height),
+                    (
+                        x,
+                        graph_y + graph_height - blocked_height,
+                        bar_width - 1,
+                        blocked_height,
+                    ),
                 )
 
         # Y-axis labels
@@ -86,7 +101,10 @@ class GraphScreen(BaseScreen):
         surface.blit(max_label, (graph_x - max_label.get_width() - 5, graph_y))
 
         zero_label = self.font.tiny.render("0", True, colors.WHITE())
-        surface.blit(zero_label, (graph_x - zero_label.get_width() - 5, graph_y + graph_height - 10))
+        surface.blit(
+            zero_label,
+            (graph_x - zero_label.get_width() - 5, graph_y + graph_height - 10),
+        )
 
         # Legend
         legend_y = 280

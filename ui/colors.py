@@ -16,10 +16,10 @@ def _init_colors():
     _colors["_style"] = theme.style
 
 
-def reload_theme(name: str = None) -> None:
+def reload_theme(name: str | None = None) -> None:
     """Reload colors from a new theme"""
     global _colors
-    if name:
+    if name is not None:
         os.environ["CUTIE_THEME"] = name
     theme = get_theme(name)
     _colors = theme.colors.copy()

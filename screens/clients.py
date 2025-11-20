@@ -41,9 +41,17 @@ class ClientsScreen(BaseScreen):
         max_count = max(self.clients.values()) if self.clients else 1
 
         # Color coding for ranks
-        rank_colors = [colors.YELLOW(), colors.WHITE(), colors.WHITE(),
-                      colors.GRAY(), colors.GRAY(), colors.GRAY(),
-                      colors.GRAY(), colors.GRAY(), colors.GRAY()]
+        rank_colors = [
+            colors.YELLOW(),
+            colors.WHITE(),
+            colors.WHITE(),
+            colors.GRAY(),
+            colors.GRAY(),
+            colors.GRAY(),
+            colors.GRAY(),
+            colors.GRAY(),
+            colors.GRAY(),
+        ]
 
         for i, (client, count) in enumerate(list(self.clients.items())[:9]):
             # Truncate long names
@@ -52,7 +60,12 @@ class ClientsScreen(BaseScreen):
 
             # Alternating row colors
             if i % 2 == 0:
-                pygame.draw.rect(surface, (20, 20, 20), (10, y, 480 - 20, row_height), border_radius=_get_radius())
+                pygame.draw.rect(
+                    surface,
+                    (20, 20, 20),
+                    (10, y, 480 - 20, row_height),
+                    border_radius=_get_radius(),
+                )
 
             # Rank with color coding
             rank_text = self.font.small.render(f"{i + 1}.", True, rank_colors[i])
@@ -68,6 +81,11 @@ class ClientsScreen(BaseScreen):
 
             # Query count bar - right side
             bar_width = int((count / max_count) * 60)
-            pygame.draw.rect(surface, colors.GREEN(), (480 - 70, y + 8, bar_width, 12), border_radius=_get_radius())
+            pygame.draw.rect(
+                surface,
+                colors.GREEN(),
+                (480 - 70, y + 8, bar_width, 12),
+                border_radius=_get_radius(),
+            )
 
             y += row_height

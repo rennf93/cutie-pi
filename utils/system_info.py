@@ -2,6 +2,7 @@
 
 import subprocess
 import time
+from venv import logger
 
 
 class SystemInfo:
@@ -42,7 +43,7 @@ class SystemInfo:
             self._fetch_network()
             self._fetch_fan()
         except Exception as e:
-            print(f"Error getting system info: {e}")
+            logger.error(f"Error getting system info: {e}")
 
     def _fetch_cpu(self) -> None:
         """Fetch CPU usage from /proc/stat"""
@@ -59,7 +60,7 @@ class SystemInfo:
                         self.cpu_percent = 100 * (1 - idle_delta / total_delta)
                 self._last_cpu = (idle, total)
         except Exception as e:
-            print(f"Error getting CPU: {e}")
+            logger.error(f"Error getting CPU: {e}")
 
     def _fetch_memory(self) -> None:
         """Fetch memory usage from /proc/meminfo"""
@@ -76,7 +77,7 @@ class SystemInfo:
                     (self.mem_used / self.mem_total * 100) if self.mem_total > 0 else 0
                 )
         except Exception as e:
-            print(f"Error getting memory: {e}")
+            logger.error(f"Error getting memory: {e}")
 
     def _fetch_disk(self) -> None:
         """Fetch disk usage"""
@@ -94,10 +95,12 @@ class SystemInfo:
                     self.disk_total = int(parts[1]) / (1024**3)  # GB
                     self.disk_used = int(parts[2]) / (1024**3)
                     self.disk_percent = (
-                        (self.disk_used / self.disk_total * 100) if self.disk_total > 0 else 0
+                        (self.disk_used / self.disk_total * 100)
+                        if self.disk_total > 0
+                        else 0
                     )
         except Exception as e:
-            print(f"Error getting disk: {e}")
+            logger.error(f"Error getting disk: {e}")
 
     def _fetch_temperature(self) -> None:
         """Fetch CPU temperature"""
@@ -105,7 +108,7 @@ class SystemInfo:
             with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
                 self.temp = int(f.read().strip()) / 1000
         except Exception as e:
-            print(f"Error getting temperature: {e}")
+            logger.error(f"Error getting temperature: {e}")
             self.temp = 0
 
     def _fetch_uptime(self) -> None:
@@ -121,7 +124,7 @@ class SystemInfo:
                 else:
                     self.uptime = f"{hours}h {mins}m"
         except Exception as e:
-            print(f"Error getting uptime: {e}")
+            logger.error(f"Error getting uptime: {e}")
             self.uptime = "N/A"
 
     def _fetch_network(self) -> None:
@@ -137,14 +140,14 @@ class SystemInfo:
                 result.stdout.strip().split()[0] if result.stdout.strip() else "N/A"
             )
         except Exception as e:
-            print(f"Error getting IP address: {e}")
+            logger.error(f"Error getting IP address: {e}")
             self.ip_address = "N/A"
 
         try:
             with open("/etc/hostname", "r") as f:
                 self.hostname = f.read().strip()
         except Exception as e:
-            print(f"Error getting hostname: {e}")
+            logger.error(f"Error getting hostname: {e}")
             self.hostname = "unknown"
 
     def _fetch_fan(self) -> None:

@@ -22,3 +22,7 @@ class BaseScreen(ABC):
     def update(self, data: dict) -> None:
         """Update screen with new data"""
         pass
+
+    def handle_tap(self, pos: tuple[int, int]) -> dict | None:
+        """Handle tap events. Override in subclasses that need tap handling."""
+        return None

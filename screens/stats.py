@@ -37,7 +37,7 @@ def _draw_bar(ui, surface, x, y, width, height, percent, color):
         end_color = (
             min(255, color[0] + 50),
             min(255, color[1] + 50),
-            min(255, color[2] + 50)
+            min(255, color[2] + 50),
         )
         ui.draw_gradient_bar(surface, x, y, width, height, percent, color, end_color)
     elif style == "dashed":
@@ -97,14 +97,18 @@ class StatsScreen(BaseScreen):
         _draw_border(self.ui, surface, pygame.Rect(15, y, 220, 65), colors.GREEN())
         text = self.font.small.render("QUERIES", True, colors.GREEN())
         surface.blit(text, (25, y + 8))
-        num = self.font.large.render(f"{int(self.displayed_queries)}", True, colors.WHITE())
+        num = self.font.large.render(
+            f"{int(self.displayed_queries)}", True, colors.WHITE()
+        )
         surface.blit(num, (25, y + 30))
 
         # Blocked box
         _draw_border(self.ui, surface, pygame.Rect(250, y, 220, 65), colors.RED())
         text = self.font.small.render("BLOCKED", True, colors.RED())
         surface.blit(text, (260, y + 8))
-        num = self.font.large.render(f"{int(self.displayed_blocked)}", True, colors.WHITE())
+        num = self.font.large.render(
+            f"{int(self.displayed_blocked)}", True, colors.WHITE()
+        )
         surface.blit(num, (260, y + 30))
 
         y = 120
@@ -112,8 +116,12 @@ class StatsScreen(BaseScreen):
         # Block percentage with bar
         text = self.font.small.render("BLOCK RATE", True, colors.CYAN())
         surface.blit(text, (15, y))
-        _draw_bar(self.ui, surface, 15, y + 18, 370, 25, self.percent_blocked, colors.CYAN())
-        percent_text = self.font.medium.render(f"{self.percent_blocked:.1f}%", True, colors.WHITE())
+        _draw_bar(
+            self.ui, surface, 15, y + 18, 370, 25, self.percent_blocked, colors.CYAN()
+        )
+        percent_text = self.font.medium.render(
+            f"{self.percent_blocked:.1f}%", True, colors.WHITE()
+        )
         surface.blit(percent_text, (395, y + 18))
 
         y = 175
@@ -142,7 +150,9 @@ class StatsScreen(BaseScreen):
         surface.blit(text, (25, y + 8))
         # Pulsing dot + status text
         pulse = abs(math.sin(self.animation_offset * 0.1)) * 3
-        pygame.draw.rect(surface, status_color, (25, y + 28, int(8 + pulse), int(8 + pulse)))
+        pygame.draw.rect(
+            surface, status_color, (25, y + 28, int(8 + pulse), int(8 + pulse))
+        )
         status_text = self.font.medium.render(self.status.upper(), True, colors.WHITE())
         surface.blit(status_text, (45, y + 25))
 
@@ -152,7 +162,9 @@ class StatsScreen(BaseScreen):
         surface.blit(text, (260, y + 8))
         # Get IP dynamically
         try:
-            result = subprocess.run(['hostname', '-I'], capture_output=True, text=True, timeout=1)
+            result = subprocess.run(
+                ["hostname", "-I"], capture_output=True, text=True, timeout=1
+            )
             ip = result.stdout.strip().split()[0] if result.stdout.strip() else "N/A"
         except Exception:
             ip = "N/A"

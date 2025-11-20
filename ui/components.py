@@ -12,10 +12,7 @@ class UIComponents:
         self.font = font
 
     def _interpolate_color(
-        self,
-        color1: tuple[int, int, int],
-        color2: tuple[int, int, int],
-        factor: float
+        self, color1: tuple[int, int, int], color2: tuple[int, int, int], factor: float
     ) -> tuple[int, int, int]:
         """Interpolate between two colors"""
         return (
@@ -29,7 +26,7 @@ class UIComponents:
         surface: pygame.Surface,
         rect: pygame.Rect,
         color: tuple[int, int, int],
-        glow_color: tuple[int, int, int] = None,
+        glow_color: tuple[int, int, int] | None = None,
         border_radius: int = 8,
         glow_size: int = 4,
     ) -> None:
@@ -49,18 +46,12 @@ class UIComponents:
                 (*glow_color, alpha),
                 glow_rect,
                 border_radius=border_radius + i,
-                width=2
+                width=2,
             )
             surface.blit(glow_surface, (x - i * 2, y - i * 2))
 
         # Draw main border
-        pygame.draw.rect(
-            surface,
-            color,
-            rect,
-            border_radius=border_radius,
-            width=3
-        )
+        pygame.draw.rect(surface, color, rect, border_radius=border_radius, width=3)
 
         # Inner highlight (top-left)
         highlight_color = self._interpolate_color(color, (255, 255, 255), 0.3)
@@ -70,7 +61,7 @@ class UIComponents:
             highlight_color,
             inner_rect,
             border_radius=border_radius - 2,
-            width=1
+            width=1,
         )
 
     def draw_gradient_bar(
@@ -82,8 +73,8 @@ class UIComponents:
         height: int,
         percent: float,
         color_start: tuple[int, int, int],
-        color_end: tuple[int, int, int] = None,
-        bg_color: tuple[int, int, int] = None,
+        color_end: tuple[int, int, int] | None = None,
+        bg_color: tuple[int, int, int] | None = None,
         border_radius: int = 4,
     ) -> None:
         """Draw a gradient progress bar with rounded corners"""
@@ -93,7 +84,9 @@ class UIComponents:
             color_end = color_start
 
         # Background
-        pygame.draw.rect(surface, bg_color, (x, y, width, height), border_radius=border_radius)
+        pygame.draw.rect(
+            surface, bg_color, (x, y, width, height), border_radius=border_radius
+        )
 
         # Filled portion
         fill_width = int((percent / 100) * width)
@@ -108,13 +101,19 @@ class UIComponents:
 
             # Apply rounded corners by masking
             mask_surface = pygame.Surface((fill_width, height), pygame.SRCALPHA)
-            pygame.draw.rect(mask_surface, (255, 255, 255, 255),
-                           (0, 0, fill_width, height), border_radius=border_radius)
+            pygame.draw.rect(
+                mask_surface,
+                (255, 255, 255, 255),
+                (0, 0, fill_width, height),
+                border_radius=border_radius,
+            )
 
             # Combine
             final_surface = pygame.Surface((fill_width, height), pygame.SRCALPHA)
             final_surface.blit(gradient_surface, (0, 0))
-            final_surface.blit(mask_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+            final_surface.blit(
+                mask_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN
+            )
 
             surface.blit(final_surface, (x, y))
 
@@ -130,7 +129,12 @@ class UIComponents:
         pygame.draw.rect(surface, color, (x, y, w, h), 3)
         # Corner blocks for that 8-bit feel
         block = 6
-        for corner in [(x, y), (x + w - block, y), (x, y + h - block), (x + w - block, y + h - block)]:
+        for corner in [
+            (x, y),
+            (x + w - block, y),
+            (x, y + h - block),
+            (x + w - block, y + h - block),
+        ]:
             pygame.draw.rect(surface, color, (*corner, block, block))
 
     def draw_dashed_border(
@@ -148,13 +152,17 @@ class UIComponents:
         for start_x in range(x, x + w, dash_len + gap_len):
             end_x = min(start_x + dash_len, x + w)
             pygame.draw.line(surface, color, (start_x, y), (end_x, y), 2)
-            pygame.draw.line(surface, color, (start_x, y + h - 1), (end_x, y + h - 1), 2)
+            pygame.draw.line(
+                surface, color, (start_x, y + h - 1), (end_x, y + h - 1), 2
+            )
 
         # Left and right
         for start_y in range(y, y + h, dash_len + gap_len):
             end_y = min(start_y + dash_len, y + h)
             pygame.draw.line(surface, color, (x, start_y), (x, end_y), 2)
-            pygame.draw.line(surface, color, (x + w - 1, start_y), (x + w - 1, end_y), 2)
+            pygame.draw.line(
+                surface, color, (x + w - 1, start_y), (x + w - 1, end_y), 2
+            )
 
     def draw_double_border(
         self,
@@ -168,7 +176,9 @@ class UIComponents:
         pygame.draw.rect(surface, color, (x, y, w, h), 2)
         # Inner border with gap
         gap = 4
-        pygame.draw.rect(surface, color, (x + gap, y + gap, w - gap * 2, h - gap * 2), 1)
+        pygame.draw.rect(
+            surface, color, (x + gap, y + gap, w - gap * 2, h - gap * 2), 1
+        )
 
     def draw_thick_border(
         self,
@@ -198,13 +208,21 @@ class UIComponents:
         pygame.draw.line(surface, color, (x, y), (x, y + bracket_len), 2)
         # Top-right
         pygame.draw.line(surface, color, (x + w - bracket_len, y), (x + w, y), 2)
-        pygame.draw.line(surface, color, (x + w - 1, y), (x + w - 1, y + bracket_len), 2)
+        pygame.draw.line(
+            surface, color, (x + w - 1, y), (x + w - 1, y + bracket_len), 2
+        )
         # Bottom-left
-        pygame.draw.line(surface, color, (x, y + h - 1), (x + bracket_len, y + h - 1), 2)
+        pygame.draw.line(
+            surface, color, (x, y + h - 1), (x + bracket_len, y + h - 1), 2
+        )
         pygame.draw.line(surface, color, (x, y + h - bracket_len), (x, y + h), 2)
         # Bottom-right
-        pygame.draw.line(surface, color, (x + w - bracket_len, y + h - 1), (x + w, y + h - 1), 2)
-        pygame.draw.line(surface, color, (x + w - 1, y + h - bracket_len), (x + w - 1, y + h), 2)
+        pygame.draw.line(
+            surface, color, (x + w - bracket_len, y + h - 1), (x + w, y + h - 1), 2
+        )
+        pygame.draw.line(
+            surface, color, (x + w - 1, y + h - bracket_len), (x + w - 1, y + h), 2
+        )
 
     def draw_inverted_border(
         self,
@@ -219,7 +237,9 @@ class UIComponents:
         pygame.draw.line(surface, dark, (x, y), (x + w, y), 3)  # Top
         pygame.draw.line(surface, dark, (x, y), (x, y + h), 3)  # Left
         # Bright inner edge (highlight)
-        pygame.draw.line(surface, color, (x, y + h - 1), (x + w, y + h - 1), 2)  # Bottom
+        pygame.draw.line(
+            surface, color, (x, y + h - 1), (x + w, y + h - 1), 2
+        )  # Bottom
         pygame.draw.line(surface, color, (x + w - 1, y), (x + w - 1, y + h), 2)  # Right
 
     def draw_chunky_bar(
@@ -231,7 +251,7 @@ class UIComponents:
         height: int,
         percent: float,
         color: tuple[int, int, int],
-        bg_color: tuple[int, int, int] = None,
+        bg_color: tuple[int, int, int] | None = None,
     ) -> None:
         """Draw a segmented pixel-art progress bar"""
         if bg_color is None:
@@ -257,9 +277,15 @@ class UIComponents:
         for i in range(num_segments):
             seg_x = x + i * total_segment_size
             if i < filled_segments:
-                pygame.draw.rect(surface, color, (seg_x, y + 2, segment_width, height - 4))
+                pygame.draw.rect(
+                    surface, color, (seg_x, y + 2, segment_width, height - 4)
+                )
             else:
-                pygame.draw.rect(surface, colors.DARKER_GRAY(), (seg_x, y + 2, segment_width, height - 4))
+                pygame.draw.rect(
+                    surface,
+                    colors.DARKER_GRAY(),
+                    (seg_x, y + 2, segment_width, height - 4),
+                )
 
     def draw_dashed_bar(
         self,
@@ -270,7 +296,7 @@ class UIComponents:
         height: int,
         percent: float,
         color: tuple[int, int, int],
-        bg_color: tuple[int, int, int] = None,
+        bg_color: tuple[int, int, int] | None = None,
     ) -> None:
         """Draw a bar with dashed fill - ocean wave feel"""
         if bg_color is None:
@@ -286,7 +312,9 @@ class UIComponents:
             gap = 3
             for dy in range(0, height, dash_height + gap):
                 if dy + dash_height <= height:
-                    pygame.draw.rect(surface, color, (x, y + dy, fill_width, dash_height))
+                    pygame.draw.rect(
+                        surface, color, (x, y + dy, fill_width, dash_height)
+                    )
 
     def draw_double_bar(
         self,
@@ -297,7 +325,7 @@ class UIComponents:
         height: int,
         percent: float,
         color: tuple[int, int, int],
-        bg_color: tuple[int, int, int] = None,
+        bg_color: tuple[int, int, int] | None = None,
     ) -> None:
         """Draw a bar with outline style - cyberpunk tech feel"""
         if bg_color is None:
@@ -312,7 +340,9 @@ class UIComponents:
             pygame.draw.rect(surface, color, (x, y, fill_width, height), 2)
             # Inner fill slightly dimmer
             inner_color = (color[0] // 2, color[1] // 2, color[2] // 2)
-            pygame.draw.rect(surface, inner_color, (x + 3, y + 3, fill_width - 6, height - 6))
+            pygame.draw.rect(
+                surface, inner_color, (x + 3, y + 3, fill_width - 6, height - 6)
+            )
 
     def draw_thick_bar(
         self,
@@ -323,7 +353,7 @@ class UIComponents:
         height: int,
         percent: float,
         color: tuple[int, int, int],
-        bg_color: tuple[int, int, int] = None,
+        bg_color: tuple[int, int, int] | None = None,
     ) -> None:
         """Draw a solid thick bar - bold warm feel"""
         if bg_color is None:
@@ -337,7 +367,11 @@ class UIComponents:
         if fill_width > 0:
             pygame.draw.rect(surface, color, (x, y, fill_width, height))
             # Bright edge on top
-            bright = (min(255, color[0] + 50), min(255, color[1] + 50), min(255, color[2] + 50))
+            bright = (
+                min(255, color[0] + 50),
+                min(255, color[1] + 50),
+                min(255, color[2] + 50),
+            )
             pygame.draw.line(surface, bright, (x, y), (x + fill_width, y), 2)
 
     def draw_terminal_bar(
@@ -349,7 +383,7 @@ class UIComponents:
         height: int,
         percent: float,
         color: tuple[int, int, int],
-        bg_color: tuple[int, int, int] = None,
+        bg_color: tuple[int, int, int] | None = None,
     ) -> None:
         """Draw a bar with scanline effect - matrix terminal feel"""
         if bg_color is None:
@@ -376,7 +410,7 @@ class UIComponents:
         height: int,
         percent: float,
         color: tuple[int, int, int],
-        bg_color: tuple[int, int, int] = None,
+        bg_color: tuple[int, int, int] | None = None,
     ) -> None:
         """Draw a hollow/inverted bar - ominous 666 feel"""
         if bg_color is None:
@@ -404,7 +438,7 @@ class UIComponents:
         label: str,
         value: str,
         border_color: tuple[int, int, int],
-        value_color: tuple[int, int, int] = None,
+        value_color: tuple[int, int, int] | None = None,
     ) -> None:
         """Draw a labeled box with a value"""
         if value_color is None:
@@ -428,7 +462,9 @@ class UIComponents:
         """Draw CRT-style scanlines effect"""
         scanline_surface = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
         for y in range(0, surface.get_height(), 3):
-            pygame.draw.line(scanline_surface, (0, 0, 0, alpha), (0, y), (surface.get_width(), y))
+            pygame.draw.line(
+                scanline_surface, (0, 0, 0, alpha), (0, y), (surface.get_width(), y)
+            )
         surface.blit(scanline_surface, (0, 0))
 
     def draw_screen_indicators(

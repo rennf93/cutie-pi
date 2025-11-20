@@ -1,8 +1,3 @@
-bandit
-mypy
 pygame
 python-dotenv
 requests
-radon
-ruff
-xenon

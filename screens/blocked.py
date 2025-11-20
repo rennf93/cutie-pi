@@ -47,7 +47,12 @@ class BlockedScreen(BaseScreen):
 
             # Alternating row colors
             if i % 2 == 0:
-                pygame.draw.rect(surface, (20, 20, 20), (10, y, 480 - 20, row_height), border_radius=_get_radius())
+                pygame.draw.rect(
+                    surface,
+                    (20, 20, 20),
+                    (10, y, 480 - 20, row_height),
+                    border_radius=_get_radius(),
+                )
 
             # Rank
             rank_text = self.font.small.render(f"{i + 1}.", True, colors.YELLOW())
@@ -63,6 +68,11 @@ class BlockedScreen(BaseScreen):
 
             # Count bar - right side
             bar_width = int((count / max_count) * 60)
-            pygame.draw.rect(surface, colors.RED(), (480 - 70, y + 8, bar_width, 12), border_radius=_get_radius())
+            pygame.draw.rect(
+                surface,
+                colors.RED(),
+                (480 - 70, y + 8, bar_width, 12),
+                border_radius=_get_radius(),
+            )
 
             y += row_height

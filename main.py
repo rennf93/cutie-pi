@@ -2,7 +2,6 @@
 """Pi-hole Dashboard - Main entry point"""
 
 import os
-import sys
 import time
 import subprocess
 import pygame
@@ -25,7 +24,8 @@ from config import (
 from ui.fonts import PixelFont
 from ui.components import UIComponents
 from ui import colors
-from ui.colors import reload_theme, get_current_theme_name
+from ui.colors import reload_theme
+from utils.logger import logger
 from api.pihole import PiholeAPI
 from screens import (
     StatsScreen,
@@ -80,7 +80,7 @@ class Dashboard:
         # State
         self.current_screen = 0
         self.running = True
-        self.last_api_update = 0
+        self.last_api_update: float = 0
 
         # Touch handling
         self.touch_start_x = 0
@@ -134,8 +134,13 @@ class Dashboard:
                     diff_x = end_x - self.touch_start_x
 
                     # Check for tap (not swipe) on settings screen
-                    if abs(diff_x) < SWIPE_THRESHOLD and self.current_screen == SCREEN_SETTINGS:
-                        action = self.screens[SCREEN_SETTINGS].handle_tap((end_x, end_y))
+                    if (
+                        abs(diff_x) < SWIPE_THRESHOLD
+                        and self.current_screen == SCREEN_SETTINGS
+                    ):
+                        action = self.screens[SCREEN_SETTINGS].handle_tap(
+                            (end_x, end_y)
+                        )
                         if action:
                             self._handle_settings_action(action)
                     elif diff_x < -SWIPE_THRESHOLD:
@@ -168,7 +173,7 @@ class Dashboard:
         """Change the current theme"""
         reload_theme(theme_name)
         self.current_theme = theme_name
-        print(f"Theme changed to: {theme_name}")
+        logger.info(f"Theme changed to: {theme_name}")
 
     def _set_brightness(self, value: int) -> None:
         """Set screen brightness (0-100)"""
@@ -191,12 +196,12 @@ class Dashboard:
 
                 with open(path, "w") as f:
                     f.write(str(actual))
-                print(f"Brightness set to {value}%")
+                logger.info(f"Brightness set to {value}%")
                 return
             except (FileNotFoundError, PermissionError, IOError):
                 continue
 
-        print("Could not set brightness - no backlight found")
+        logger.error("Could not set brightness - no backlight found")
 
     def _sleep_display(self) -> None:
         """Put display to sleep"""
@@ -210,8 +215,12 @@ class Dashboard:
         # Try multiple methods to turn off display
         try:
             # Method 1: DPMS via xset
-            subprocess.run(["xset", "dpms", "force", "off"],
-                         env=env, capture_output=True, timeout=2)
+            subprocess.run(
+                ["xset", "dpms", "force", "off"],
+                env=env,
+                capture_output=True,
+                timeout=2,
+            )
         except Exception:
             pass
 
@@ -232,7 +241,7 @@ class Dashboard:
             pass
 
         self.display_asleep = True
-        print("Display sleeping")
+        logger.info("Display sleeping")
 
     def _wake_display(self) -> None:
         """Wake display from sleep"""
@@ -246,8 +255,9 @@ class Dashboard:
         # Try multiple methods to turn on display
         try:
             # Method 1: DPMS via xset
-            subprocess.run(["xset", "dpms", "force", "on"],
-                         env=env, capture_output=True, timeout=2)
+            subprocess.run(
+                ["xset", "dpms", "force", "on"], env=env, capture_output=True, timeout=2
+            )
         except Exception:
             pass
 
@@ -269,7 +279,7 @@ class Dashboard:
 
         self.display_asleep = False
         self.last_activity = time.time()
-        print("Display waking")
+        logger.info("Display waking")
 
     def update(self) -> None:
         """Update dashboard data"""
@@ -299,13 +309,13 @@ class Dashboard:
             self.last_api_update = current_time
 
         # Update screens every frame for animations
-        if hasattr(self, '_summary'):
+        if hasattr(self, "_summary"):
             self.screens[SCREEN_STATS].update(self._summary)
-        if hasattr(self, '_overtime'):
+        if hasattr(self, "_overtime"):
             self.screens[SCREEN_GRAPH].update(self._overtime)
-        if hasattr(self, '_blocked'):
+        if hasattr(self, "_blocked"):
             self.screens[SCREEN_BLOCKED].update(self._blocked)
-        if hasattr(self, '_clients'):
+        if hasattr(self, "_clients"):
             self.screens[SCREEN_CLIENTS].update(self._clients)
 
         # System screen updates more frequently (handled internally)
@@ -343,7 +353,7 @@ class Dashboard:
 
     def run(self) -> None:
         """Main loop"""
-        print("Starting Pi-hole Dashboard...")
+        logger.info("Starting Pi-hole Dashboard...")
 
         while self.running:
             self.handle_events()
@@ -352,7 +362,7 @@ class Dashboard:
             self.clock.tick(FPS)
 
         pygame.quit()
-        print("Dashboard closed.")
+        logger.info("Dashboard closed.")
 
 
 def main() -> None:

@@ -78,11 +78,21 @@ class SettingsScreen(BaseScreen):
         # Option 0: Theme
         if tapped_option == 0:
             if x >= 260 and x <= 295:  # Left arrow
-                self.current_theme_index = (self.current_theme_index - 1) % len(self.themes)
-                return {"action": "change_theme", "theme": self.themes[self.current_theme_index]}
+                self.current_theme_index = (self.current_theme_index - 1) % len(
+                    self.themes
+                )
+                return {
+                    "action": "change_theme",
+                    "theme": self.themes[self.current_theme_index],
+                }
             elif x >= 430:  # Right arrow
-                self.current_theme_index = (self.current_theme_index + 1) % len(self.themes)
-                return {"action": "change_theme", "theme": self.themes[self.current_theme_index]}
+                self.current_theme_index = (self.current_theme_index + 1) % len(
+                    self.themes
+                )
+                return {
+                    "action": "change_theme",
+                    "theme": self.themes[self.current_theme_index],
+                }
 
         # Option 1: Scanlines (toggle)
         elif tapped_option == 1:
@@ -105,18 +115,32 @@ class SettingsScreen(BaseScreen):
         # Option 4: API Interval
         elif tapped_option == 4:
             if x >= 260 and x <= 295:  # Left arrow
-                self.api_interval_index = (self.api_interval_index - 1) % len(self.API_INTERVALS)
+                self.api_interval_index = (self.api_interval_index - 1) % len(
+                    self.API_INTERVALS
+                )
             elif x >= 430:  # Right arrow
-                self.api_interval_index = (self.api_interval_index + 1) % len(self.API_INTERVALS)
-            return {"action": "set_api_interval", "value": self.API_INTERVALS[self.api_interval_index]}
+                self.api_interval_index = (self.api_interval_index + 1) % len(
+                    self.API_INTERVALS
+                )
+            return {
+                "action": "set_api_interval",
+                "value": self.API_INTERVALS[self.api_interval_index],
+            }
 
         # Option 5: Screen Timeout
         elif tapped_option == 5:
             if x >= 260 and x <= 295:  # Left arrow
-                self.screen_timeout_index = (self.screen_timeout_index - 1) % len(self.TIMEOUT_OPTIONS)
+                self.screen_timeout_index = (self.screen_timeout_index - 1) % len(
+                    self.TIMEOUT_OPTIONS
+                )
             elif x >= 430:  # Right arrow
-                self.screen_timeout_index = (self.screen_timeout_index + 1) % len(self.TIMEOUT_OPTIONS)
-            return {"action": "set_timeout", "value": self.TIMEOUT_OPTIONS[self.screen_timeout_index]}
+                self.screen_timeout_index = (self.screen_timeout_index + 1) % len(
+                    self.TIMEOUT_OPTIONS
+                )
+            return {
+                "action": "set_timeout",
+                "value": self.TIMEOUT_OPTIONS[self.screen_timeout_index],
+            }
 
         return None
 
@@ -159,7 +183,13 @@ class SettingsScreen(BaseScreen):
             border_color = colors.GREEN() if is_selected else colors.GRAY()
 
             # Simple line border instead of full box for compact look
-            pygame.draw.rect(surface, border_color, (15, y, 450, row_height), 1, border_radius=_get_radius())
+            pygame.draw.rect(
+                surface,
+                border_color,
+                (15, y, 450, row_height),
+                1,
+                border_radius=_get_radius(),
+            )
 
             # Label
             label_text = self.font.small.render(label, True, border_color)
@@ -168,13 +198,13 @@ class SettingsScreen(BaseScreen):
             if has_arrows:
                 arrow_color = colors.WHITE() if is_selected else colors.GRAY()
                 # Left arrow
-                pygame.draw.polygon(surface, arrow_color, [
-                    (270, y + 19), (280, y + 12), (280, y + 26)
-                ])
+                pygame.draw.polygon(
+                    surface, arrow_color, [(270, y + 19), (280, y + 12), (280, y + 26)]
+                )
                 # Right arrow
-                pygame.draw.polygon(surface, arrow_color, [
-                    (450, y + 19), (440, y + 12), (440, y + 26)
-                ])
+                pygame.draw.polygon(
+                    surface, arrow_color, [(450, y + 19), (440, y + 12), (440, y + 26)]
+                )
                 # Value centered
                 value_text = self.font.small.render(value, True, colors.WHITE())
                 text_x = 290 + (140 - value_text.get_width()) // 2
@@ -191,7 +221,9 @@ class SettingsScreen(BaseScreen):
         draw_row("THEME", theme_name, has_arrows=True)
 
         # Row 1: Scanlines
-        draw_row("SCANLINES", "ON" if self.scanlines_enabled else "OFF", has_arrows=False)
+        draw_row(
+            "SCANLINES", "ON" if self.scanlines_enabled else "OFF", has_arrows=False
+        )
 
         # Row 2: Show FPS
         draw_row("SHOW FPS", "ON" if self.show_fps else "OFF", has_arrows=False)
