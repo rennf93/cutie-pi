@@ -2,6 +2,7 @@
 
 import pygame
 
+from config import SCREEN_HEIGHT
 from . import colors
 from .fonts import PixelFont
 
@@ -473,9 +474,11 @@ class UIComponents:
         surface: pygame.Surface,
         current: int,
         total: int,
-        y: int = 310,
+        y: int | None = None,
     ) -> None:
         """Draw screen position indicators"""
+        if y is None:
+            y = SCREEN_HEIGHT - 10
         indicator_width = 8
         indicator_spacing = 12
         total_width = total * indicator_spacing - (indicator_spacing - indicator_width)

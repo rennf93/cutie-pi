@@ -2,6 +2,7 @@
 
 import pygame
 
+from config import SCREEN_HEIGHT, SCREEN_WIDTH
 from ui import colors
 from ui.components import UIComponents
 from ui.fonts import PixelFont
@@ -35,7 +36,7 @@ class ClientsScreen(BaseScreen):
 
         if not self.clients:
             text = self.font.medium.render("No data", True, colors.GRAY())
-            surface.blit(text, (480 // 2 - 40, 320 // 2))
+            surface.blit(text, (SCREEN_WIDTH // 2 - 40, SCREEN_HEIGHT // 2))
             return
 
         y = 40
@@ -65,7 +66,7 @@ class ClientsScreen(BaseScreen):
                 pygame.draw.rect(
                     surface,
                     (20, 20, 20),
-                    (10, y, 480 - 20, row_height),
+                    (10, y, SCREEN_WIDTH - 20, row_height),
                     border_radius=_get_radius(),
                 )
 
@@ -79,14 +80,14 @@ class ClientsScreen(BaseScreen):
 
             # Count text - right aligned before bar
             count_text = self.font.small.render(str(count), True, colors.WHITE())
-            surface.blit(count_text, (480 - 120, y + 8))
+            surface.blit(count_text, (SCREEN_WIDTH - 120, y + 8))
 
             # Query count bar - right side
             bar_width = int((count / max_count) * 60)
             pygame.draw.rect(
                 surface,
                 colors.GREEN(),
-                (480 - 70, y + 8, bar_width, 12),
+                (SCREEN_WIDTH - 70, y + 8, bar_width, 12),
                 border_radius=_get_radius(),
             )
 
