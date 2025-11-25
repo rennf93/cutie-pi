@@ -52,3 +52,129 @@ THEME = os.environ.get("CUTIE_THEME", "default")
 
 # Swipe detection
 SWIPE_THRESHOLD = _get_int_env("CUTIE_SWIPE_THRESHOLD", 50, min_val=10, max_val=200)
+
+
+# =============================================================================
+# Responsive Layout System
+# =============================================================================
+# All layout values are calculated as percentages of screen dimensions
+# to ensure consistent appearance across different screen sizes
+# (240x320, 480x320, 800x480, etc.)
+# =============================================================================
+
+class Layout:
+    """Centralized responsive layout calculations"""
+
+    # Base reference dimensions (original design target)
+    _REF_WIDTH = 480
+    _REF_HEIGHT = 320
+
+    # Scale factors
+    scale_x: float = SCREEN_WIDTH / _REF_WIDTH
+    scale_y: float = SCREEN_HEIGHT / _REF_HEIGHT
+    scale_min: float = min(scale_x, scale_y)
+
+    # ==========================================================================
+    # Common Margins & Padding (scaled from reference 480x320)
+    # ==========================================================================
+    margin_xs: int = max(2, int(4 * scale_x))    # Extra small: ~4px at 480w
+    margin_sm: int = max(4, int(10 * scale_x))   # Small: ~10px at 480w
+    margin_md: int = max(6, int(15 * scale_x))   # Medium: ~15px at 480w
+    margin_lg: int = max(8, int(25 * scale_x))   # Large: ~25px at 480w
+
+    padding_xs: int = max(2, int(5 * scale_y))   # Extra small vertical
+    padding_sm: int = max(4, int(8 * scale_y))   # Small vertical
+    padding_md: int = max(6, int(12 * scale_y))  # Medium vertical
+    padding_lg: int = max(8, int(17 * scale_y))  # Large vertical
+
+    # ==========================================================================
+    # Title & Header positioning
+    # ==========================================================================
+    title_x: int = margin_sm
+    title_y: int = margin_sm
+    header_height: int = max(30, int(40 * scale_y))
+
+    # ==========================================================================
+    # Row/List layouts
+    # ==========================================================================
+    row_height_sm: int = max(20, int(28 * scale_y))   # For lists (blocked, clients)
+    row_height_md: int = max(28, int(38 * scale_y))   # For settings
+    row_start_y: int = max(30, int(40 * scale_y))     # Y position where rows start
+    row_padding: int = padding_sm                      # Vertical padding within rows
+
+    # Text positioning within rows
+    rank_x: int = margin_md                            # Rank number position
+    content_x: int = max(35, int(50 * scale_x))       # Main content start position
+
+    # ==========================================================================
+    # Box layouts (info boxes, stats)
+    # ==========================================================================
+    box_margin: int = int(SCREEN_WIDTH * 0.03)        # Margin around boxes
+    box_width: int = int((SCREEN_WIDTH - box_margin * 3) / 2)  # Two-column width
+    box_right_x: int = box_margin + box_width + box_margin     # Right column X
+
+    box_padding_x: int = margin_sm                    # Horizontal padding inside boxes
+    box_padding_y: int = padding_sm                   # Vertical padding inside boxes
+    box_text_offset: int = max(20, int(28 * scale_y)) # Offset for second line in box
+
+    # ==========================================================================
+    # Bar elements (progress bars, graphs)
+    # ==========================================================================
+    bar_height_sm: int = max(10, int(12 * scale_y))   # Small bars (in lists)
+    bar_height_md: int = max(18, int(25 * scale_y))   # Medium bars
+    bar_height_lg: int = max(45, int(60 * scale_y))   # Large bars (CPU/RAM)
+
+    # ==========================================================================
+    # Right-side elements (counts, bars in lists)
+    # ==========================================================================
+    count_x: int = SCREEN_WIDTH - int(SCREEN_WIDTH * 0.25)      # Count text position
+    bar_x: int = SCREEN_WIDTH - int(SCREEN_WIDTH * 0.15)        # Small bar position
+    bar_max_width: int = int(SCREEN_WIDTH * 0.125)              # Max width for list bars
+
+    # ==========================================================================
+    # Settings screen specific
+    # ==========================================================================
+    arrow_left_x: int = int(SCREEN_WIDTH * 0.56)
+    arrow_right_x: int = SCREEN_WIDTH - int(SCREEN_WIDTH * 0.0625)
+    value_x: int = int(SCREEN_WIDTH * 0.60)
+
+    # Arrow tap zones
+    arrow_tap_left_start: int = int(SCREEN_WIDTH * 0.54)
+    arrow_tap_left_end: int = int(SCREEN_WIDTH * 0.62)
+    arrow_tap_right_start: int = SCREEN_WIDTH - 50
+
+    # Arrow dimensions
+    arrow_width: int = max(8, int(10 * scale_x))
+    arrow_half_height: int = max(5, int(7 * scale_y))
+
+    # ==========================================================================
+    # Graph screen specific
+    # ==========================================================================
+    graph_margin: int = max(30, int(40 * scale_x))
+    graph_x: int = graph_margin
+    graph_y: int = max(30, int(40 * scale_y))
+    graph_width: int = SCREEN_WIDTH - max(45, int(60 * scale_x))
+    graph_height: int = SCREEN_HEIGHT - max(70, int(90 * scale_y))
+
+    legend_y: int = SCREEN_HEIGHT - max(30, int(40 * scale_y))
+    legend_box_size: int = max(8, int(10 * scale_min))
+    legend_spacing: int = margin_md
+
+    # ==========================================================================
+    # Text truncation (characters, not pixels)
+    # ==========================================================================
+    @staticmethod
+    def max_chars_for_width(available_width: int, char_width: int = 8) -> int:
+        """Calculate max characters that fit in given width"""
+        return max(10, available_width // char_width)
+
+    # Pre-calculated max chars for common uses
+    max_domain_chars: int = max(10, int(SCREEN_WIDTH / 12))
+    max_client_chars: int = max(10, int(SCREEN_WIDTH / 12))
+
+    # ==========================================================================
+    # Screen indicator dots
+    # ==========================================================================
+    indicator_y: int = SCREEN_HEIGHT - margin_sm
+    indicator_size: int = max(4, int(6 * scale_min))
+    indicator_spacing: int = max(8, int(12 * scale_x))
