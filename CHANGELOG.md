@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-11-25
+
+### Fixed
+- Fixed 5-inch display (800x480) support by making PI-HOLE stats and System screens responsive
+- UI coordinates now scale properly based on SCREEN_WIDTH and SCREEN_HEIGHT configuration
+
 ## [1.0.0] - 2025-01-20
 
 ### Added
@@ -53,4 +59,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 3.5" LCD touchscreen (480x320)
 - Compatible with Pi-hole v6 API
 
+[1.0.1]: https://github.com/rennf93/cutie-pi/releases/tag/v1.0.1
 [1.0.0]: https://github.com/rennf93/cutie-pi/releases/tag/v1.0.0
