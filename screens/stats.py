@@ -5,6 +5,7 @@ import subprocess
 
 import pygame
 
+from config import SCREEN_HEIGHT, SCREEN_WIDTH
 from ui import colors
 from ui.components import UIComponents
 from ui.fonts import PixelFont
@@ -104,79 +105,89 @@ class StatsScreen(BaseScreen):
         """Draw the stats screen"""
         surface.fill(colors.BLACK())
 
+        # Calculate responsive dimensions
+        margin = int(SCREEN_WIDTH * 0.03)  # ~3% margin
+        box_width = int((SCREEN_WIDTH - margin * 3) / 2)  # Two columns with margins
+        right_x = margin + box_width + margin
+        bar_width = int(SCREEN_WIDTH * 0.77)  # Bar width for block rate
+        percent_x = margin + bar_width + 10  # Position for percentage text
+
+        # Vertical spacing based on screen height
+        title_y = int(SCREEN_HEIGHT * 0.03)
+        row1_y = int(SCREEN_HEIGHT * 0.125)
+        row1_box_h = int(SCREEN_HEIGHT * 0.20)
+        row2_y = int(SCREEN_HEIGHT * 0.375)
+        bar_height = int(SCREEN_HEIGHT * 0.078)
+        row3_y = int(SCREEN_HEIGHT * 0.547)
+        row3_box_h = int(SCREEN_HEIGHT * 0.172)
+        row4_y = int(SCREEN_HEIGHT * 0.766)
+        row4_box_h = int(SCREEN_HEIGHT * 0.156)
+
         # Title
         title = self.font.medium.render("PI-HOLE", True, colors.GREEN())
-        surface.blit(title, (10, 10))
-
-        y = 40
+        surface.blit(title, (margin, title_y))
 
         # Total Queries box
-        _draw_border(self.ui, surface, pygame.Rect(15, y, 220, 65), colors.GREEN())
+        _draw_border(self.ui, surface, pygame.Rect(margin, row1_y, box_width, row1_box_h), colors.GREEN())
         text = self.font.small.render("QUERIES", True, colors.GREEN())
-        surface.blit(text, (25, y + 8))
+        surface.blit(text, (margin + 10, row1_y + 8))
         num = self.font.large.render(
             f"{int(self.displayed_queries)}", True, colors.WHITE()
         )
-        surface.blit(num, (25, y + 30))
+        surface.blit(num, (margin + 10, row1_y + 30))
 
         # Blocked box
-        _draw_border(self.ui, surface, pygame.Rect(250, y, 220, 65), colors.RED())
+        _draw_border(self.ui, surface, pygame.Rect(right_x, row1_y, box_width, row1_box_h), colors.RED())
         text = self.font.small.render("BLOCKED", True, colors.RED())
-        surface.blit(text, (260, y + 8))
+        surface.blit(text, (right_x + 10, row1_y + 8))
         num = self.font.large.render(
             f"{int(self.displayed_blocked)}", True, colors.WHITE()
         )
-        surface.blit(num, (260, y + 30))
-
-        y = 120
+        surface.blit(num, (right_x + 10, row1_y + 30))
 
         # Block percentage with bar
         text = self.font.small.render("BLOCK RATE", True, colors.CYAN())
-        surface.blit(text, (15, y))
+        surface.blit(text, (margin, row2_y))
         _draw_bar(
-            self.ui, surface, 15, y + 18, 370, 25, self.percent_blocked, colors.CYAN()
+            self.ui, surface, margin, row2_y + 18, bar_width, bar_height, self.percent_blocked, colors.CYAN()
         )
         percent_text = self.font.medium.render(
             f"{self.percent_blocked:.1f}%", True, colors.WHITE()
         )
-        surface.blit(percent_text, (395, y + 18))
-
-        y = 175
+        surface.blit(percent_text, (percent_x, row2_y + 18))
 
         # Clients box
-        _draw_border(self.ui, surface, pygame.Rect(15, y, 220, 55), colors.YELLOW())
+        _draw_border(self.ui, surface, pygame.Rect(margin, row3_y, box_width, row3_box_h), colors.YELLOW())
         text = self.font.small.render("CLIENTS", True, colors.YELLOW())
-        surface.blit(text, (25, y + 8))
+        surface.blit(text, (margin + 10, row3_y + 8))
         num = self.font.medium.render(f"{self.clients}", True, colors.WHITE())
-        surface.blit(num, (25, y + 28))
+        surface.blit(num, (margin + 10, row3_y + 28))
 
         # Blocklist box
-        _draw_border(self.ui, surface, pygame.Rect(250, y, 220, 55), colors.PURPLE())
+        _draw_border(self.ui, surface, pygame.Rect(right_x, row3_y, box_width, row3_box_h), colors.PURPLE())
         text = self.font.small.render("BLOCKLIST", True, colors.PURPLE())
-        surface.blit(text, (260, y + 8))
+        surface.blit(text, (right_x + 10, row3_y + 8))
         domains_str = self._format_number(self.domains_blocked)
         num = self.font.medium.render(domains_str, True, colors.WHITE())
-        surface.blit(num, (260, y + 28))
-
-        y = 245
+        surface.blit(num, (right_x + 10, row3_y + 28))
 
         # Status box
         status_color = colors.GREEN() if self.status == "enabled" else colors.RED()
-        _draw_border(self.ui, surface, pygame.Rect(15, y, 220, 50), status_color)
+        _draw_border(self.ui, surface, pygame.Rect(margin, row4_y, box_width, row4_box_h), status_color)
         text = self.font.small.render("STATUS", True, status_color)
-        surface.blit(text, (25, y + 8))
+        surface.blit(text, (margin + 10, row4_y + 8))
         # Pulsing dot + status text
         pulse = abs(math.sin(self.animation_offset * 0.1)) * 3
         pygame.draw.rect(
-            surface, status_color, (25, y + 28, int(8 + pulse), int(8 + pulse))
+            surface, status_color, (margin + 10, row4_y + 28, int(8 + pulse), int(8 + pulse))
         )
         status_text = self.font.medium.render(self.status.upper(), True, colors.WHITE())
-        surface.blit(status_text, (45, y + 25))
+        surface.blit(status_text, (margin + 30, row4_y + 25))
 
         # DNS box
-        _draw_border(self.ui, surface, pygame.Rect(250, y, 220, 50), colors.CYAN())
+        _draw_border(self.ui, surface, pygame.Rect(right_x, row4_y, box_width, row4_box_h), colors.CYAN())
         text = self.font.small.render("DNS", True, colors.CYAN())
-        surface.blit(text, (260, y + 8))
+        surface.blit(text, (right_x + 10, row4_y + 8))
         # Get IP dynamically
         try:
             result = subprocess.run(
@@ -186,7 +197,7 @@ class StatsScreen(BaseScreen):
         except Exception:
             ip = "N/A"
         dns_text = self.font.medium.render(ip, True, colors.WHITE())
-        surface.blit(dns_text, (260, y + 25))
+        surface.blit(dns_text, (right_x + 10, row4_y + 25))
 
     def _format_number(self, num: int) -> str:
         """Format large numbers with K/M suffix"""

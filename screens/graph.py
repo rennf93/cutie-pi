@@ -2,6 +2,7 @@
 
 import pygame
 
+from config import SCREEN_HEIGHT, SCREEN_WIDTH
 from ui import colors
 from ui.components import UIComponents
 from ui.fonts import PixelFont
@@ -41,14 +42,14 @@ class GraphScreen(BaseScreen):
 
         if not self.history:
             no_data = self.font.small.render("NO DATA", True, colors.GRAY())
-            surface.blit(no_data, (200, 150))
+            surface.blit(no_data, (SCREEN_WIDTH // 2 - 30, SCREEN_HEIGHT // 2))
             return
 
-        # Graph area - extends to bottom
+        # Graph area - extends to bottom, scales with screen size
         graph_x = 40
         graph_y = 40
-        graph_width = 420
-        graph_height = 230
+        graph_width = SCREEN_WIDTH - 60
+        graph_height = SCREEN_HEIGHT - 90
 
         # Draw graph background
         radius = 8 if colors.get_style() == "glow" else 0
@@ -109,7 +110,7 @@ class GraphScreen(BaseScreen):
         )
 
         # Legend
-        legend_y = 280
+        legend_y = SCREEN_HEIGHT - 40
         pygame.draw.rect(surface, colors.GREEN(), (10, legend_y, 10, 10))
         total_label = self.font.tiny.render("TOTAL", True, colors.WHITE())
         surface.blit(total_label, (25, legend_y))
@@ -120,4 +121,4 @@ class GraphScreen(BaseScreen):
 
         # Time labels
         time_label = self.font.tiny.render("LAST 4 HOURS", True, colors.WHITE())
-        surface.blit(time_label, (graph_x + graph_width - time_label.get_width(), 280))
+        surface.blit(time_label, (graph_x + graph_width - time_label.get_width(), legend_y))

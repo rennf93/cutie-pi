@@ -2,7 +2,7 @@
 
 import pygame
 
-from config import VERSION
+from config import SCREEN_HEIGHT, SCREEN_WIDTH, VERSION
 from ui import colors
 from ui.components import UIComponents
 from ui.fonts import PixelFont
@@ -41,7 +41,7 @@ class SettingsScreen(BaseScreen):
 
         # Lock state - settings locked by default
         self.locked = True
-        self.lock_rect = pygame.Rect(430, 5, 40, 30)  # Lock icon area
+        self.lock_rect = pygame.Rect(SCREEN_WIDTH - 50, 5, 40, 30)  # Lock icon area
 
     def update(self, data: dict) -> None:
         """Update settings data"""
@@ -54,7 +54,7 @@ class SettingsScreen(BaseScreen):
         """Handle arrow tap for cycling through values"""
         if x >= 260 and x <= 295:  # Left arrow
             return (index - 1) % len(values)
-        elif x >= 430:  # Right arrow
+        elif x >= SCREEN_WIDTH - 50:  # Right arrow
             return (index + 1) % len(values)
         return index
 
@@ -73,7 +73,7 @@ class SettingsScreen(BaseScreen):
         """Handle brightness option tap"""
         if x >= 260 and x <= 295:
             self.brightness = max(10, self.brightness - 10)
-        elif x >= 430:
+        elif x >= SCREEN_WIDTH - 50:
             self.brightness = min(100, self.brightness + 10)
         return {"action": "set_brightness", "value": self.brightness}
 
@@ -155,18 +155,18 @@ class SettingsScreen(BaseScreen):
         # Lock icon in top right (before version)
         lock_color = colors.RED() if self.locked else colors.GREEN()
         # Draw lock body
-        pygame.draw.rect(surface, lock_color, (445, 15, 16, 12))
+        pygame.draw.rect(surface, lock_color, (SCREEN_WIDTH - 35, 15, 16, 12))
         # Draw lock shackle (arch)
         if self.locked:
             # Closed shackle
-            pygame.draw.arc(surface, lock_color, (447, 6, 12, 12), 0, 3.14, 2)
+            pygame.draw.arc(surface, lock_color, (SCREEN_WIDTH - 33, 6, 12, 12), 0, 3.14, 2)
         else:
             # Open shackle (shifted right)
-            pygame.draw.arc(surface, lock_color, (451, 6, 12, 12), 0, 3.14, 2)
+            pygame.draw.arc(surface, lock_color, (SCREEN_WIDTH - 29, 6, 12, 12), 0, 3.14, 2)
 
         # Version below lock
         version_text = self.font.tiny.render(f"v{VERSION}", True, colors.GRAY())
-        surface.blit(version_text, (480 - version_text.get_width() - 10, 28))
+        surface.blit(version_text, (SCREEN_WIDTH - version_text.get_width() - 10, 28))
 
         y = 38
         row_height = 38
@@ -175,7 +175,8 @@ class SettingsScreen(BaseScreen):
         # Helper to draw a setting row
         def draw_row(label: str, value: str, has_arrows: bool = True) -> None:
             nonlocal y
-            option_rect = pygame.Rect(15, y, 450, row_height)
+            row_width = SCREEN_WIDTH - 30
+            option_rect = pygame.Rect(15, y, row_width, row_height)
             self.option_rects.append(option_rect)
 
             idx = len(self.option_rects) - 1
@@ -186,7 +187,7 @@ class SettingsScreen(BaseScreen):
             pygame.draw.rect(
                 surface,
                 border_color,
-                (15, y, 450, row_height),
+                (15, y, row_width, row_height),
                 1,
                 border_radius=_get_radius(),
             )
@@ -201,18 +202,21 @@ class SettingsScreen(BaseScreen):
                 pygame.draw.polygon(
                     surface, arrow_color, [(270, y + 19), (280, y + 12), (280, y + 26)]
                 )
-                # Right arrow
+                # Right arrow - positioned relative to screen width
+                right_arrow_x = SCREEN_WIDTH - 30
                 pygame.draw.polygon(
-                    surface, arrow_color, [(450, y + 19), (440, y + 12), (440, y + 26)]
+                    surface, arrow_color, [(right_arrow_x, y + 19), (right_arrow_x - 10, y + 12), (right_arrow_x - 10, y + 26)]
                 )
-                # Value centered
+                # Value centered between arrows
                 value_text = self.font.small.render(value, True, colors.WHITE())
-                text_x = 290 + (140 - value_text.get_width()) // 2
+                value_area_width = right_arrow_x - 10 - 290
+                text_x = 290 + (value_area_width - value_text.get_width()) // 2
                 surface.blit(value_text, (text_x, y + 12))
             else:
                 # Toggle - center value like other settings
                 value_text = self.font.small.render(value, True, colors.WHITE())
-                text_x = 290 + (140 - value_text.get_width()) // 2
+                value_area_width = SCREEN_WIDTH - 30 - 10 - 290
+                text_x = 290 + (value_area_width - value_text.get_width()) // 2
                 surface.blit(value_text, (text_x, y + 12))
 
             y += row_height + 2
@@ -246,4 +250,4 @@ class SettingsScreen(BaseScreen):
             hint = self.font.tiny.render("TAP LOCK TO EDIT", True, colors.GRAY())
         else:
             hint = self.font.tiny.render("TAP TO CHANGE", True, colors.GRAY())
-        surface.blit(hint, (240 - hint.get_width() // 2, 285))
+        surface.blit(hint, (SCREEN_WIDTH // 2 - hint.get_width() // 2, SCREEN_HEIGHT - 35))
