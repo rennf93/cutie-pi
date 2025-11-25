@@ -109,15 +109,17 @@ class GraphScreen(BaseScreen):
             (graph_x - zero_label.get_width() - 5, graph_y + graph_height - 10),
         )
 
-        # Legend
-        legend_y = SCREEN_HEIGHT - 40
+        # Legend - responsive positioning
+        legend_y = SCREEN_HEIGHT - int(SCREEN_HEIGHT * 0.125)
         pygame.draw.rect(surface, colors.GREEN(), (10, legend_y, 10, 10))
         total_label = self.font.tiny.render("TOTAL", True, colors.WHITE())
         surface.blit(total_label, (25, legend_y))
 
-        pygame.draw.rect(surface, colors.RED(), (100, legend_y, 10, 10))
+        # Position blocked legend relative to screen width
+        blocked_legend_x = int(SCREEN_WIDTH * 0.21)
+        pygame.draw.rect(surface, colors.RED(), (blocked_legend_x, legend_y, 10, 10))
         blocked_label = self.font.tiny.render("BLOCKED", True, colors.WHITE())
-        surface.blit(blocked_label, (115, legend_y))
+        surface.blit(blocked_label, (blocked_legend_x + 15, legend_y))
 
         # Time labels
         time_label = self.font.tiny.render("LAST 4 HOURS", True, colors.WHITE())

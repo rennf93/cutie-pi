@@ -52,7 +52,10 @@ class SettingsScreen(BaseScreen):
 
     def _handle_arrow_tap(self, x: int, values: list, index: int) -> int:
         """Handle arrow tap for cycling through values"""
-        if x >= 260 and x <= 295:  # Left arrow
+        # Responsive arrow positions based on screen width
+        left_arrow_start = int(SCREEN_WIDTH * 0.54)
+        left_arrow_end = int(SCREEN_WIDTH * 0.62)
+        if x >= left_arrow_start and x <= left_arrow_end:  # Left arrow
             return (index - 1) % len(values)
         elif x >= SCREEN_WIDTH - 50:  # Right arrow
             return (index + 1) % len(values)
@@ -71,7 +74,10 @@ class SettingsScreen(BaseScreen):
 
     def _handle_brightness_tap(self, x: int) -> dict:
         """Handle brightness option tap"""
-        if x >= 260 and x <= 295:
+        # Responsive arrow positions based on screen width
+        left_arrow_start = int(SCREEN_WIDTH * 0.54)
+        left_arrow_end = int(SCREEN_WIDTH * 0.62)
+        if x >= left_arrow_start and x <= left_arrow_end:
             self.brightness = max(10, self.brightness - 10)
         elif x >= SCREEN_WIDTH - 50:
             self.brightness = min(100, self.brightness + 10)
@@ -168,9 +174,18 @@ class SettingsScreen(BaseScreen):
         version_text = self.font.tiny.render(f"v{VERSION}", True, colors.GRAY())
         surface.blit(version_text, (SCREEN_WIDTH - version_text.get_width() - 10, 28))
 
-        y = 38
-        row_height = 38
+        y = int(SCREEN_HEIGHT * 0.12)
+        row_height = int(SCREEN_HEIGHT * 0.12)
+        row_spacing = 2
         self.option_rects = []
+
+        # Responsive positioning for arrows and values
+        left_arrow_x = int(SCREEN_WIDTH * 0.56)
+        value_start_x = int(SCREEN_WIDTH * 0.60)
+        right_arrow_x = SCREEN_WIDTH - int(SCREEN_WIDTH * 0.0625)
+        arrow_v_offset = int(row_height * 0.5)
+        arrow_half_height = int(row_height * 0.18)
+        text_v_offset = int(row_height * 0.32)
 
         # Helper to draw a setting row
         def draw_row(label: str, value: str, has_arrows: bool = True) -> None:
@@ -194,32 +209,39 @@ class SettingsScreen(BaseScreen):
 
             # Label
             label_text = self.font.small.render(label, True, border_color)
-            surface.blit(label_text, (25, y + 12))
+            surface.blit(label_text, (25, y + text_v_offset))
 
             if has_arrows:
                 arrow_color = colors.WHITE() if is_selected else colors.GRAY()
-                # Left arrow
+                # Left arrow - responsive position
                 pygame.draw.polygon(
-                    surface, arrow_color, [(270, y + 19), (280, y + 12), (280, y + 26)]
+                    surface, arrow_color, [
+                        (left_arrow_x, y + arrow_v_offset),
+                        (left_arrow_x + 10, y + arrow_v_offset - arrow_half_height),
+                        (left_arrow_x + 10, y + arrow_v_offset + arrow_half_height)
+                    ]
                 )
                 # Right arrow - positioned relative to screen width
-                right_arrow_x = SCREEN_WIDTH - 30
                 pygame.draw.polygon(
-                    surface, arrow_color, [(right_arrow_x, y + 19), (right_arrow_x - 10, y + 12), (right_arrow_x - 10, y + 26)]
+                    surface, arrow_color, [
+                        (right_arrow_x, y + arrow_v_offset),
+                        (right_arrow_x - 10, y + arrow_v_offset - arrow_half_height),
+                        (right_arrow_x - 10, y + arrow_v_offset + arrow_half_height)
+                    ]
                 )
                 # Value centered between arrows
                 value_text = self.font.small.render(value, True, colors.WHITE())
-                value_area_width = right_arrow_x - 10 - 290
-                text_x = 290 + (value_area_width - value_text.get_width()) // 2
-                surface.blit(value_text, (text_x, y + 12))
+                value_area_width = right_arrow_x - 10 - value_start_x
+                text_x = value_start_x + (value_area_width - value_text.get_width()) // 2
+                surface.blit(value_text, (text_x, y + text_v_offset))
             else:
                 # Toggle - center value like other settings
                 value_text = self.font.small.render(value, True, colors.WHITE())
-                value_area_width = SCREEN_WIDTH - 30 - 10 - 290
-                text_x = 290 + (value_area_width - value_text.get_width()) // 2
-                surface.blit(value_text, (text_x, y + 12))
+                value_area_width = right_arrow_x - 10 - value_start_x
+                text_x = value_start_x + (value_area_width - value_text.get_width()) // 2
+                surface.blit(value_text, (text_x, y + text_v_offset))
 
-            y += row_height + 2
+            y += row_height + row_spacing
 
         # Row 0: Theme
         theme_name = self.themes[self.current_theme_index].upper()
@@ -250,4 +272,5 @@ class SettingsScreen(BaseScreen):
             hint = self.font.tiny.render("TAP LOCK TO EDIT", True, colors.GRAY())
         else:
             hint = self.font.tiny.render("TAP TO CHANGE", True, colors.GRAY())
-        surface.blit(hint, (SCREEN_WIDTH // 2 - hint.get_width() // 2, SCREEN_HEIGHT - 35))
+        hint_y = SCREEN_HEIGHT - int(SCREEN_HEIGHT * 0.11)
+        surface.blit(hint, (SCREEN_WIDTH // 2 - hint.get_width() // 2, hint_y))
