@@ -26,13 +26,13 @@ A pixel-art dashboard for Pi-hole on small LCD screens. Inspired by retro aesthe
 ### Quick Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/rennf93/cutie-pi/v1.0.1/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/rennf93/cutie-pi/v1.0.2/install.sh | sudo bash
 ```
 
 ### With Options
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/rennf93/cutie-pi/v1.0.1/install.sh | sudo bash -s -- \
+curl -sSL https://raw.githubusercontent.com/rennf93/cutie-pi/v1.0.2/install.sh | sudo bash -s -- \
   --pihole-password "yourpass" \
   --theme neon
 ```
@@ -40,7 +40,7 @@ curl -sSL https://raw.githubusercontent.com/rennf93/cutie-pi/v1.0.1/install.sh |
 ### Clone & Install
 
 ```bash
-git clone --depth 1 --branch v1.0.1 https://github.com/rennf93/cutie-pi.git
+git clone --depth 1 --branch v1.0.2 https://github.com/rennf93/cutie-pi.git
 cd cutie-pi
 sudo bash install.sh --pihole-password "yourpass"
 ```
@@ -48,7 +48,7 @@ sudo bash install.sh --pihole-password "yourpass"
 ### Update Existing Installation
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/rennf93/cutie-pi/v1.0.1/install.sh | sudo bash -s -- --update
+curl -sSL https://raw.githubusercontent.com/rennf93/cutie-pi/v1.0.2/install.sh | sudo bash -s -- --update
 ```
 
 ### Installation Options
