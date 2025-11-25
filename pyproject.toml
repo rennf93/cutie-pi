@@ -1,6 +1,6 @@
 [project]
 name = "cutie-pi"
-version = "1.0.1"
+version = "1.0.2"
 description = "A cute Pi-hole dashboard for Raspberry Pi with touchscreen"
 readme = "README.md"
 license = {text = "MIT"}

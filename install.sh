@@ -4,7 +4,7 @@
 # A pixel-art Pi-hole dashboard for small LCD screens
 #
 # One-liner install:
-#   curl -sSL https://raw.githubusercontent.com/rennf93/cutie-pi/v1.0.1/install.sh | sudo bash
+#   curl -sSL https://raw.githubusercontent.com/rennf93/cutie-pi/v1.0.2/install.sh | sudo bash
 #
 
 set -e
@@ -18,7 +18,7 @@ NC='\033[0m' # No Color
 
 # GitHub repo info
 GITHUB_REPO="rennf93/cutie-pi"
-GITHUB_BRANCH="v1.0.1"  # Use tagged release, not master
+GITHUB_BRANCH="v1.0.2"  # Use tagged release, not master
 
 # Default values
 INSTALL_DIR="/opt/cutie-pi"
@@ -34,7 +34,7 @@ DEFAULT_SCREEN_HEIGHT="320"
 DEFAULT_THEME="default"
 
 # Version from source
-VERSION="1.0.1"
+VERSION="1.0.2"
 
 print_banner() {
     echo -e "${CYAN}"
