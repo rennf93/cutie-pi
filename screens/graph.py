@@ -2,7 +2,7 @@
 
 import pygame
 
-from config import SCREEN_HEIGHT, SCREEN_WIDTH
+from config import SCREEN_HEIGHT, SCREEN_WIDTH, Layout
 from ui import colors
 from ui.components import UIComponents
 from ui.fonts import PixelFont
@@ -38,18 +38,18 @@ class GraphScreen(BaseScreen):
 
         # Title
         title = self.font.medium.render("QUERY HISTORY", True, colors.GREEN())
-        surface.blit(title, (10, 10))
+        surface.blit(title, (Layout.title_x, Layout.title_y))
 
         if not self.history:
             no_data = self.font.small.render("NO DATA", True, colors.GRAY())
             surface.blit(no_data, (SCREEN_WIDTH // 2 - 30, SCREEN_HEIGHT // 2))
             return
 
-        # Graph area - extends to bottom, scales with screen size
-        graph_x = 40
-        graph_y = 40
-        graph_width = SCREEN_WIDTH - 60
-        graph_height = SCREEN_HEIGHT - 90
+        # Graph area - uses Layout system
+        graph_x = Layout.graph_x
+        graph_y = Layout.graph_y
+        graph_width = Layout.graph_width
+        graph_height = Layout.graph_height
 
         # Draw graph background
         radius = 8 if colors.get_style() == "glow" else 0
@@ -101,23 +101,26 @@ class GraphScreen(BaseScreen):
 
         # Y-axis labels
         max_label = self.font.tiny.render(str(max_val), True, colors.WHITE())
-        surface.blit(max_label, (graph_x - max_label.get_width() - 5, graph_y))
+        surface.blit(max_label, (graph_x - max_label.get_width() - Layout.margin_xs, graph_y))
 
         zero_label = self.font.tiny.render("0", True, colors.WHITE())
         surface.blit(
             zero_label,
-            (graph_x - zero_label.get_width() - 5, graph_y + graph_height - 10),
+            (graph_x - zero_label.get_width() - Layout.margin_xs, graph_y + graph_height - Layout.margin_sm),
         )
 
-        # Legend
-        legend_y = SCREEN_HEIGHT - 40
-        pygame.draw.rect(surface, colors.GREEN(), (10, legend_y, 10, 10))
+        # Legend - responsive positioning
+        legend_y = Layout.legend_y
+        legend_size = Layout.legend_box_size
+        pygame.draw.rect(surface, colors.GREEN(), (Layout.margin_sm, legend_y, legend_size, legend_size))
         total_label = self.font.tiny.render("TOTAL", True, colors.WHITE())
-        surface.blit(total_label, (25, legend_y))
+        surface.blit(total_label, (Layout.margin_sm + legend_size + Layout.margin_xs, legend_y))
 
-        pygame.draw.rect(surface, colors.RED(), (100, legend_y, 10, 10))
+        # Position blocked legend relative to screen width
+        blocked_legend_x = Layout.margin_sm + legend_size + Layout.margin_xs + total_label.get_width() + Layout.legend_spacing
+        pygame.draw.rect(surface, colors.RED(), (blocked_legend_x, legend_y, legend_size, legend_size))
         blocked_label = self.font.tiny.render("BLOCKED", True, colors.WHITE())
-        surface.blit(blocked_label, (115, legend_y))
+        surface.blit(blocked_label, (blocked_legend_x + legend_size + Layout.margin_xs, legend_y))
 
         # Time labels
         time_label = self.font.tiny.render("LAST 4 HOURS", True, colors.WHITE())

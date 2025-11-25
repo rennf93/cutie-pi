@@ -2,7 +2,7 @@
 
 import pygame
 
-from config import SCREEN_HEIGHT, SCREEN_WIDTH, VERSION
+from config import SCREEN_HEIGHT, SCREEN_WIDTH, VERSION, Layout
 from ui import colors
 from ui.components import UIComponents
 from ui.fonts import PixelFont
@@ -41,7 +41,10 @@ class SettingsScreen(BaseScreen):
 
         # Lock state - settings locked by default
         self.locked = True
-        self.lock_rect = pygame.Rect(SCREEN_WIDTH - 50, 5, 40, 30)  # Lock icon area
+        self.lock_rect = pygame.Rect(
+            SCREEN_WIDTH - Layout.margin_lg * 2, Layout.margin_xs,
+            Layout.margin_lg + Layout.margin_sm, Layout.margin_lg
+        )
 
     def update(self, data: dict) -> None:
         """Update settings data"""
@@ -52,9 +55,9 @@ class SettingsScreen(BaseScreen):
 
     def _handle_arrow_tap(self, x: int, values: list, index: int) -> int:
         """Handle arrow tap for cycling through values"""
-        if x >= 260 and x <= 295:  # Left arrow
+        if x >= Layout.arrow_tap_left_start and x <= Layout.arrow_tap_left_end:
             return (index - 1) % len(values)
-        elif x >= SCREEN_WIDTH - 50:  # Right arrow
+        elif x >= Layout.arrow_tap_right_start:
             return (index + 1) % len(values)
         return index
 
@@ -71,9 +74,9 @@ class SettingsScreen(BaseScreen):
 
     def _handle_brightness_tap(self, x: int) -> dict:
         """Handle brightness option tap"""
-        if x >= 260 and x <= 295:
+        if x >= Layout.arrow_tap_left_start and x <= Layout.arrow_tap_left_end:
             self.brightness = max(10, self.brightness - 10)
-        elif x >= SCREEN_WIDTH - 50:
+        elif x >= Layout.arrow_tap_right_start:
             self.brightness = min(100, self.brightness + 10)
         return {"action": "set_brightness", "value": self.brightness}
 
@@ -150,33 +153,57 @@ class SettingsScreen(BaseScreen):
 
         # Title
         title = self.font.medium.render("SETTINGS", True, colors.CYAN())
-        surface.blit(title, (10, 10))
+        surface.blit(title, (Layout.title_x, Layout.title_y))
 
         # Lock icon in top right (before version)
+        lock_x = SCREEN_WIDTH - Layout.margin_lg - Layout.margin_sm
+        lock_y = Layout.margin_md
+        lock_body_w = max(12, int(16 * Layout.scale_x))
+        lock_body_h = max(9, int(12 * Layout.scale_y))
         lock_color = colors.RED() if self.locked else colors.GREEN()
         # Draw lock body
-        pygame.draw.rect(surface, lock_color, (SCREEN_WIDTH - 35, 15, 16, 12))
+        pygame.draw.rect(surface, lock_color, (lock_x, lock_y, lock_body_w, lock_body_h))
         # Draw lock shackle (arch)
+        shackle_w = max(9, int(12 * Layout.scale_x))
+        shackle_h = max(9, int(12 * Layout.scale_y))
         if self.locked:
             # Closed shackle
-            pygame.draw.arc(surface, lock_color, (SCREEN_WIDTH - 33, 6, 12, 12), 0, 3.14, 2)
+            pygame.draw.arc(
+                surface, lock_color,
+                (lock_x + 2, lock_y - shackle_h + 3, shackle_w, shackle_h),
+                0, 3.14, 2
+            )
         else:
             # Open shackle (shifted right)
-            pygame.draw.arc(surface, lock_color, (SCREEN_WIDTH - 29, 6, 12, 12), 0, 3.14, 2)
+            pygame.draw.arc(
+                surface, lock_color,
+                (lock_x + Layout.margin_xs, lock_y - shackle_h + 3, shackle_w, shackle_h),
+                0, 3.14, 2
+            )
 
         # Version below lock
         version_text = self.font.tiny.render(f"v{VERSION}", True, colors.GRAY())
-        surface.blit(version_text, (SCREEN_WIDTH - version_text.get_width() - 10, 28))
+        surface.blit(version_text, (SCREEN_WIDTH - version_text.get_width() - Layout.margin_sm, lock_y + lock_body_h + 3))
 
-        y = 38
-        row_height = 38
+        y = Layout.row_start_y
+        row_height = Layout.row_height_md
+        row_spacing = Layout.margin_xs
         self.option_rects = []
+
+        # Responsive positioning for arrows and values
+        left_arrow_x = Layout.arrow_left_x
+        value_start_x = Layout.value_x
+        right_arrow_x = Layout.arrow_right_x
+        arrow_v_offset = row_height // 2
+        arrow_half_h = Layout.arrow_half_height
+        arrow_w = Layout.arrow_width
+        text_v_offset = int(row_height * 0.32)
 
         # Helper to draw a setting row
         def draw_row(label: str, value: str, has_arrows: bool = True) -> None:
             nonlocal y
-            row_width = SCREEN_WIDTH - 30
-            option_rect = pygame.Rect(15, y, row_width, row_height)
+            row_width = SCREEN_WIDTH - Layout.margin_md * 2
+            option_rect = pygame.Rect(Layout.rank_x, y, row_width, row_height)
             self.option_rects.append(option_rect)
 
             idx = len(self.option_rects) - 1
@@ -187,39 +214,46 @@ class SettingsScreen(BaseScreen):
             pygame.draw.rect(
                 surface,
                 border_color,
-                (15, y, row_width, row_height),
+                (Layout.rank_x, y, row_width, row_height),
                 1,
                 border_radius=_get_radius(),
             )
 
             # Label
             label_text = self.font.small.render(label, True, border_color)
-            surface.blit(label_text, (25, y + 12))
+            surface.blit(label_text, (Layout.margin_lg, y + text_v_offset))
 
             if has_arrows:
                 arrow_color = colors.WHITE() if is_selected else colors.GRAY()
-                # Left arrow
+                # Left arrow - responsive position
                 pygame.draw.polygon(
-                    surface, arrow_color, [(270, y + 19), (280, y + 12), (280, y + 26)]
+                    surface, arrow_color, [
+                        (left_arrow_x, y + arrow_v_offset),
+                        (left_arrow_x + arrow_w, y + arrow_v_offset - arrow_half_h),
+                        (left_arrow_x + arrow_w, y + arrow_v_offset + arrow_half_h)
+                    ]
                 )
                 # Right arrow - positioned relative to screen width
-                right_arrow_x = SCREEN_WIDTH - 30
                 pygame.draw.polygon(
-                    surface, arrow_color, [(right_arrow_x, y + 19), (right_arrow_x - 10, y + 12), (right_arrow_x - 10, y + 26)]
+                    surface, arrow_color, [
+                        (right_arrow_x, y + arrow_v_offset),
+                        (right_arrow_x - arrow_w, y + arrow_v_offset - arrow_half_h),
+                        (right_arrow_x - arrow_w, y + arrow_v_offset + arrow_half_h)
+                    ]
                 )
                 # Value centered between arrows
                 value_text = self.font.small.render(value, True, colors.WHITE())
-                value_area_width = right_arrow_x - 10 - 290
-                text_x = 290 + (value_area_width - value_text.get_width()) // 2
-                surface.blit(value_text, (text_x, y + 12))
+                value_area_width = right_arrow_x - arrow_w - value_start_x
+                text_x = value_start_x + (value_area_width - value_text.get_width()) // 2
+                surface.blit(value_text, (text_x, y + text_v_offset))
             else:
                 # Toggle - center value like other settings
                 value_text = self.font.small.render(value, True, colors.WHITE())
-                value_area_width = SCREEN_WIDTH - 30 - 10 - 290
-                text_x = 290 + (value_area_width - value_text.get_width()) // 2
-                surface.blit(value_text, (text_x, y + 12))
+                value_area_width = right_arrow_x - arrow_w - value_start_x
+                text_x = value_start_x + (value_area_width - value_text.get_width()) // 2
+                surface.blit(value_text, (text_x, y + text_v_offset))
 
-            y += row_height + 2
+            y += row_height + row_spacing
 
         # Row 0: Theme
         theme_name = self.themes[self.current_theme_index].upper()
@@ -250,4 +284,5 @@ class SettingsScreen(BaseScreen):
             hint = self.font.tiny.render("TAP LOCK TO EDIT", True, colors.GRAY())
         else:
             hint = self.font.tiny.render("TAP TO CHANGE", True, colors.GRAY())
-        surface.blit(hint, (SCREEN_WIDTH // 2 - hint.get_width() // 2, SCREEN_HEIGHT - 35))
+        hint_y = SCREEN_HEIGHT - Layout.header_height
+        surface.blit(hint, (SCREEN_WIDTH // 2 - hint.get_width() // 2, hint_y))
