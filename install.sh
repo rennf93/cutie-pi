@@ -169,8 +169,9 @@ install_application() {
 create_config() {
     echo -e "${GREEN}[5/6]${NC} Creating configuration..."
 
-    # Create config directory
+    # Create config directory with user ownership for settings persistence
     mkdir -p /etc/cutie-pi
+    chown "$ACTUAL_USER:$ACTUAL_USER" /etc/cutie-pi
 
     # Check if config already exists (for updates)
     if [[ -f "$CONFIG_FILE" && "$UPDATE_MODE" == "true" ]]; then
@@ -203,7 +204,9 @@ CUTIE_SYSTEM_INTERVAL="2"
 CUTIE_SWIPE_THRESHOLD="50"
 EOF
 
-    chmod 600 "$CONFIG_FILE"
+    # Make config readable by systemd, writable by the app user for settings persistence
+    chown "$ACTUAL_USER:$ACTUAL_USER" "$CONFIG_FILE"
+    chmod 644 "$CONFIG_FILE"
 }
 
 setup_service() {

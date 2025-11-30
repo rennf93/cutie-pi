@@ -1,8 +1,11 @@
 """Configuration and constants for the Pi-hole dashboard"""
 
+import logging
 import os
 
 from __version__ import __version__
+
+logger = logging.getLogger(__name__)
 
 
 def _get_int_env(key: str, default: int, min_val: int = 0, max_val: int = 10000) -> int:
@@ -103,9 +106,10 @@ def save_settings(
             for key, value in sorted(existing_config.items()):
                 f.write(f'{key}="{value}"\n')
 
+        logger.info(f"Settings saved to {CONFIG_FILE}")
         return True
     except (OSError, PermissionError) as e:
-        print(f"Warning: Could not save settings: {e}")
+        logger.error(f"Could not save settings to {CONFIG_FILE}: {e}")
         return False
 
 
