@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Settings now persist across reboots (saved when user locks the settings screen)
 
-## [1.0.2] - 2025-11-30
+## [1.0.2] - 2025-11-25
 
 ### Added
 - Centralized `Layout` class in config.py for true resolution independence
