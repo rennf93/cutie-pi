@@ -53,6 +53,61 @@ THEME = os.environ.get("CUTIE_THEME", "default")
 # Swipe detection
 SWIPE_THRESHOLD = _get_int_env("CUTIE_SWIPE_THRESHOLD", 50, min_val=10, max_val=200)
 
+# Display timeout (minutes, 0 = never)
+SCREEN_TIMEOUT = _get_int_env("CUTIE_SCREEN_TIMEOUT", 0, min_val=0, max_val=60)
+
+# Visual settings
+SCANLINES_ENABLED = os.environ.get("CUTIE_SCANLINES", "true").lower() in ("true", "1", "yes")
+SHOW_FPS = os.environ.get("CUTIE_SHOW_FPS", "false").lower() in ("true", "1", "yes")
+BRIGHTNESS = _get_int_env("CUTIE_BRIGHTNESS", 100, min_val=10, max_val=100)
+
+# Config file path
+CONFIG_FILE = "/etc/cutie-pi/config"
+
+
+def save_settings(
+    theme: str,
+    api_interval: int,
+    screen_timeout: int,
+    scanlines: bool,
+    show_fps: bool,
+    brightness: int,
+) -> bool:
+    """Save current settings to config file.
+
+    Returns True if successful, False otherwise.
+    """
+    try:
+        # Read existing config to preserve Pi-hole credentials and display settings
+        existing_config: dict[str, str] = {}
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE) as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        key, value = line.split("=", 1)
+                        existing_config[key.strip()] = value.strip().strip('"')
+
+        # Update with new values while preserving others
+        existing_config["CUTIE_THEME"] = theme
+        existing_config["CUTIE_API_INTERVAL"] = str(api_interval)
+        existing_config["CUTIE_SCREEN_TIMEOUT"] = str(screen_timeout)
+        existing_config["CUTIE_SCANLINES"] = "true" if scanlines else "false"
+        existing_config["CUTIE_SHOW_FPS"] = "true" if show_fps else "false"
+        existing_config["CUTIE_BRIGHTNESS"] = str(brightness)
+
+        # Write updated config
+        with open(CONFIG_FILE, "w") as f:
+            f.write("# Cutie-Pi Configuration\n")
+            f.write("# Settings auto-saved by application\n\n")
+            for key, value in sorted(existing_config.items()):
+                f.write(f'{key}="{value}"\n')
+
+        return True
+    except (OSError, PermissionError) as e:
+        print(f"Warning: Could not save settings: {e}")
+        return False
+
 
 # =============================================================================
 # Responsive Layout System

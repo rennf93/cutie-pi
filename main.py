@@ -11,7 +11,9 @@ import pygame
 from api.pihole import PiholeAPI
 from config import (
     API_UPDATE_INTERVAL,
+    BRIGHTNESS,
     FPS,
+    SCANLINES_ENABLED,
     SCREEN_BLOCKED,
     SCREEN_CLIENTS,
     SCREEN_GRAPH,
@@ -19,10 +21,13 @@ from config import (
     SCREEN_SETTINGS,
     SCREEN_STATS,
     SCREEN_SYSTEM,
+    SCREEN_TIMEOUT,
     SCREEN_WIDTH,
+    SHOW_FPS,
     SWIPE_THRESHOLD,
     THEME,
     TOTAL_SCREENS,
+    save_settings,
 )
 from screens import (
     BlockedScreen,
@@ -71,13 +76,33 @@ class Dashboard:
         # Current theme
         self.current_theme = THEME
 
-        # Settings
-        self.scanlines_enabled = True
-        self.show_fps = False
-        self.screen_timeout = 0  # minutes, 0 = never
+        # Settings (loaded from config file via environment variables)
+        self.scanlines_enabled = SCANLINES_ENABLED
+        self.show_fps = SHOW_FPS
+        self.screen_timeout = SCREEN_TIMEOUT  # minutes, 0 = never
+        self.brightness = BRIGHTNESS
         self.api_update_interval = API_UPDATE_INTERVAL
         self.last_activity = time.time()
         self.display_asleep = False
+
+        # Apply initial brightness if not 100%
+        if self.brightness != 100:
+            self._set_brightness(self.brightness)
+
+        # Sync settings screen with loaded config values
+        settings_screen = self.screens[SCREEN_SETTINGS]
+        settings_screen.scanlines_enabled = self.scanlines_enabled
+        settings_screen.show_fps = self.show_fps
+        settings_screen.brightness = self.brightness
+        # Find the index for api_interval and screen_timeout
+        if self.api_update_interval in settings_screen.API_INTERVALS:
+            settings_screen.api_interval_index = settings_screen.API_INTERVALS.index(
+                self.api_update_interval
+            )
+        if self.screen_timeout in settings_screen.TIMEOUT_OPTIONS:
+            settings_screen.screen_timeout_index = settings_screen.TIMEOUT_OPTIONS.index(
+                self.screen_timeout
+            )
 
         # State
         self.current_screen = 0
@@ -171,17 +196,35 @@ class Dashboard:
         elif action_type == "toggle_fps":
             self.show_fps = action["enabled"]
         elif action_type == "set_brightness":
+            self.brightness = action["value"]
             self._set_brightness(action["value"])
         elif action_type == "set_api_interval":
             self.api_update_interval = action["value"]
         elif action_type == "set_timeout":
             self.screen_timeout = action["value"]
+        elif action_type == "lock_settings":
+            self._save_settings()
 
     def _change_theme(self, theme_name: str) -> None:
         """Change the current theme"""
         reload_theme(theme_name)
         self.current_theme = theme_name
         logger.info(f"Theme changed to: {theme_name}")
+
+    def _save_settings(self) -> None:
+        """Save current settings to config file"""
+        success = save_settings(
+            theme=self.current_theme,
+            api_interval=self.api_update_interval,
+            screen_timeout=self.screen_timeout,
+            scanlines=self.scanlines_enabled,
+            show_fps=self.show_fps,
+            brightness=self.brightness,
+        )
+        if success:
+            logger.info("Settings saved to config file")
+        else:
+            logger.warning("Failed to save settings to config file")
 
     def _set_brightness(self, value: int) -> None:
         """Set screen brightness (0-100)"""
@@ -212,73 +255,131 @@ class Dashboard:
         logger.error("Could not set brightness - no backlight found")
 
     def _sleep_display(self) -> None:
-        """Put display to sleep"""
+        """Put display to sleep using multiple methods for broad hardware support"""
         if self.display_asleep:
             return
 
-        # Set DISPLAY for xset commands
+        sleep_success = False
+
+        # Method 1: Framebuffer blanking (works for most displays including PiTFT)
+        try:
+            with open("/sys/class/graphics/fb0/blank", "w") as f:
+                f.write("1")  # 1 = blank
+            sleep_success = True
+            logger.debug("Display sleep: framebuffer blanking")
+        except (FileNotFoundError, PermissionError, OSError):
+            pass
+
+        # Method 2: Backlight power control (various paths for different displays)
+        bl_power_paths = [
+            "/sys/class/backlight/rpi_backlight/bl_power",
+            "/sys/class/backlight/10-0045/bl_power",
+            "/sys/class/backlight/soc:backlight/bl_power",
+            "/sys/class/backlight/backlight/bl_power",
+        ]
+        for path in bl_power_paths:
+            try:
+                with open(path, "w") as f:
+                    f.write("1")  # 1 = off
+                sleep_success = True
+                logger.debug(f"Display sleep: backlight power {path}")
+                break
+            except (FileNotFoundError, PermissionError, OSError):
+                continue
+
+        # Method 3: Backlight brightness to 0
+        bl_brightness_paths = [
+            "/sys/class/backlight/rpi_backlight/brightness",
+            "/sys/class/backlight/10-0045/brightness",
+            "/sys/class/backlight/soc:backlight/brightness",
+            "/sys/class/backlight/backlight/brightness",
+        ]
+        for path in bl_brightness_paths:
+            try:
+                # Store original brightness for wake
+                with open(path) as f:
+                    self._saved_brightness = f.read().strip()
+                with open(path, "w") as f:
+                    f.write("0")
+                sleep_success = True
+                self._brightness_path = path
+                logger.debug(f"Display sleep: brightness to 0 via {path}")
+                break
+            except (FileNotFoundError, PermissionError, OSError):
+                continue
+
+        # Method 4: DPMS via xset (for X11 environments)
         env = os.environ.copy()
         env["DISPLAY"] = ":0"
-
-        # Try multiple methods to turn off display
-        with contextlib.suppress(subprocess.CalledProcessError):
-            # Method 1: DPMS via xset
-            subprocess.run(
+        try:
+            result = subprocess.run(
                 ["xset", "dpms", "force", "off"],
                 env=env,
                 capture_output=True,
                 timeout=2,
             )
-
-        try:
-            # Method 2: Backlight power control
-            bl_paths = [
-                "/sys/class/backlight/rpi_backlight/bl_power",
-                "/sys/class/backlight/10-0045/bl_power",
-            ]
-            for path in bl_paths:
-                try:
-                    with open(path, "w") as f:
-                        f.write("1")  # 1 = off
-                    break
-                except (FileNotFoundError, PermissionError):
-                    continue
-        except Exception:
+            if result.returncode == 0:
+                sleep_success = True
+                logger.debug("Display sleep: DPMS force off")
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
             pass
 
         self.display_asleep = True
-        logger.info("Display sleeping")
+        if sleep_success:
+            logger.info("Display sleeping")
+        else:
+            logger.warning("Display sleep: no working method found")
 
     def _wake_display(self) -> None:
-        """Wake display from sleep"""
+        """Wake display from sleep using multiple methods for broad hardware support"""
         if not self.display_asleep:
             return
 
-        # Set DISPLAY for xset commands
+        # Method 1: Framebuffer unblanking
+        try:
+            with open("/sys/class/graphics/fb0/blank", "w") as f:
+                f.write("0")  # 0 = unblank
+            logger.debug("Display wake: framebuffer unblanking")
+        except (FileNotFoundError, PermissionError, OSError):
+            pass
+
+        # Method 2: Backlight power control
+        bl_power_paths = [
+            "/sys/class/backlight/rpi_backlight/bl_power",
+            "/sys/class/backlight/10-0045/bl_power",
+            "/sys/class/backlight/soc:backlight/bl_power",
+            "/sys/class/backlight/backlight/bl_power",
+        ]
+        for path in bl_power_paths:
+            try:
+                with open(path, "w") as f:
+                    f.write("0")  # 0 = on
+                logger.debug(f"Display wake: backlight power {path}")
+                break
+            except (FileNotFoundError, PermissionError, OSError):
+                continue
+
+        # Method 3: Restore backlight brightness
+        if hasattr(self, "_brightness_path") and hasattr(self, "_saved_brightness"):
+            try:
+                with open(self._brightness_path, "w") as f:
+                    f.write(self._saved_brightness)
+                logger.debug(f"Display wake: brightness restored via {self._brightness_path}")
+            except (FileNotFoundError, PermissionError, OSError):
+                pass
+
+        # Method 4: DPMS via xset
         env = os.environ.copy()
         env["DISPLAY"] = ":0"
-
-        # Try multiple methods to turn on display
-        # Method 1: DPMS via xset
-        with contextlib.suppress(subprocess.CalledProcessError):
-            subprocess.run(
-                ["xset", "dpms", "force", "on"], env=env, capture_output=True, timeout=2
-            )
-
         try:
-            # Method 2: Backlight power control
-            bl_paths = [
-                "/sys/class/backlight/rpi_backlight/bl_power",
-                "/sys/class/backlight/10-0045/bl_power",
-            ]
-            for path in bl_paths:
-                try:
-                    with open(path, "w") as f:
-                        f.write("0")  # 0 = on
-                    break
-                except (FileNotFoundError, PermissionError):
-                    continue
-        except Exception:
+            subprocess.run(
+                ["xset", "dpms", "force", "on"],
+                env=env,
+                capture_output=True,
+                timeout=2,
+            )
+            logger.debug("Display wake: DPMS force on")
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
             pass
 
         self.display_asleep = False
