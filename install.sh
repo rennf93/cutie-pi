@@ -4,7 +4,7 @@
 # A pixel-art Pi-hole dashboard for small LCD screens
 #
 # One-liner install:
-#   curl -sSL https://raw.githubusercontent.com/rennf93/cutie-pi/v1.1.0/install.sh | sudo bash
+#   curl -sSL https://raw.githubusercontent.com/rennf93/cutie-pi/v1.1.1/install.sh | sudo bash
 #
 
 set -e
@@ -18,7 +18,7 @@ NC='\033[0m' # No Color
 
 # GitHub repo info
 GITHUB_REPO="rennf93/cutie-pi"
-GITHUB_BRANCH="v1.1.0"  # Use tagged release, not master
+GITHUB_BRANCH="v1.1.1"  # Use tagged release, not master
 
 # Default values
 INSTALL_DIR="/opt/cutie-pi"
@@ -34,7 +34,7 @@ DEFAULT_SCREEN_HEIGHT="320"
 DEFAULT_THEME="default"
 
 # Version from source
-VERSION="1.1.0"
+VERSION="1.1.1"
 
 print_banner() {
     echo -e "${CYAN}"
@@ -169,8 +169,9 @@ install_application() {
 create_config() {
     echo -e "${GREEN}[5/6]${NC} Creating configuration..."
 
-    # Create config directory
+    # Create config directory with user ownership for settings persistence
     mkdir -p /etc/cutie-pi
+    chown "$ACTUAL_USER:$ACTUAL_USER" /etc/cutie-pi
 
     # Check if config already exists (for updates)
     if [[ -f "$CONFIG_FILE" && "$UPDATE_MODE" == "true" ]]; then
@@ -203,7 +204,9 @@ CUTIE_SYSTEM_INTERVAL="2"
 CUTIE_SWIPE_THRESHOLD="50"
 EOF
 
-    chmod 600 "$CONFIG_FILE"
+    # Make config readable by systemd, writable by the app user for settings persistence
+    chown "$ACTUAL_USER:$ACTUAL_USER" "$CONFIG_FILE"
+    chmod 644 "$CONFIG_FILE"
 }
 
 setup_service() {

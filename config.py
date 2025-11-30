@@ -3,6 +3,7 @@
 import os
 
 from __version__ import __version__
+from utils.logger import logger
 
 
 def _get_int_env(key: str, default: int, min_val: int = 0, max_val: int = 10000) -> int:
@@ -10,14 +11,14 @@ def _get_int_env(key: str, default: int, min_val: int = 0, max_val: int = 10000)
     try:
         value = int(os.environ.get(key, str(default)))
     except ValueError:
-        print(f"Warning: Invalid {key} value, using default {default}")
+        logger.warning(f"Invalid {key} value, using default {default}")
         return default
 
     if value < min_val:
-        print(f"Warning: {key}={value} below minimum {min_val}, using {min_val}")
+        logger.warning(f"{key}={value} below minimum {min_val}, using {min_val}")
         return min_val
     if value > max_val:
-        print(f"Warning: {key}={value} exceeds maximum {max_val}, using {max_val}")
+        logger.warning(f"{key}={value} exceeds maximum {max_val}, using {max_val}")
         return max_val
     return value
 
@@ -103,9 +104,10 @@ def save_settings(
             for key, value in sorted(existing_config.items()):
                 f.write(f'{key}="{value}"\n')
 
+        logger.info(f"Settings saved to {CONFIG_FILE}")
         return True
     except (OSError, PermissionError) as e:
-        print(f"Warning: Could not save settings: {e}")
+        logger.error(f"Could not save settings to {CONFIG_FILE}: {e}")
         return False
 
 
