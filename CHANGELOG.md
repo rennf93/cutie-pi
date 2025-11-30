@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New config options: `CUTIE_SCREEN_TIMEOUT`, `CUTIE_SCANLINES`, `CUTIE_SHOW_FPS`, `CUTIE_BRIGHTNESS`
 
 ### Fixed
-- Fixed display sleep for PiTFT and other non-standard displays:
+- Improved display sleep compatibility for various display types:
   - Added framebuffer blanking support (`/sys/class/graphics/fb0/blank`)
   - Added more backlight control paths for various display types
   - Added brightness-based sleep (saves and restores brightness level)
