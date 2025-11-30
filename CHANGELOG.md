@@ -5,21 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.2] - 2025-11-25
+## [1.0.2] - 2025-11-30
 
 ### Added
 - Centralized `Layout` class in config.py for true resolution independence
 - Font scaling system that adjusts text size based on screen dimensions
+- Settings persistence: all settings now save to config file when locking the settings screen
+- New config options: `CUTIE_SCREEN_TIMEOUT`, `CUTIE_SCANLINES`, `CUTIE_SHOW_FPS`, `CUTIE_BRIGHTNESS`
 
 ### Fixed
 - Fixed 2.8" PiTFT (240x320) display support with proper scaling
 - Settings screen arrows and tap zones now fully responsive (were hardcoded off-screen for small displays)
 - All UI elements now scale proportionally across different screen sizes
 - Font sizes scale down on smaller screens to prevent text overflow
+- Fixed display sleep for PiTFT and other non-standard displays:
+  - Added framebuffer blanking support (`/sys/class/graphics/fb0/blank`)
+  - Added more backlight control paths for various display types
+  - Added brightness-based sleep (saves and restores brightness level)
+  - Improved error handling and logging for sleep/wake methods
 
 ### Changed
 - All screen files now use Layout class for consistent responsive positioning
 - Minimum font sizes enforced to maintain readability on small screens
+- Settings now persist across reboots (saved when user locks the settings screen)
 
 ## [1.0.1] - 2025-11-25
 

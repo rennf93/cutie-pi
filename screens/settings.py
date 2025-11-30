@@ -106,7 +106,11 @@ class SettingsScreen(BaseScreen):
 
         # Check if lock icon was tapped
         if self.lock_rect.collidepoint(pos):
+            was_unlocked = not self.locked
             self.locked = not self.locked
+            # When locking (transitioning from unlocked to locked), save settings
+            if self.locked and was_unlocked:
+                return {"action": "lock_settings"}
             return None
 
         # If locked, ignore all other taps
